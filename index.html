@@ -33,12 +33,24 @@
         }
         .evolution-label { font-size: 0.8rem; font-weight: bold; margin-top: 8px; color: #333; }
         .levels-list { flex-grow: 1; max-width: 400px; display: flex; flex-direction: column; }
-        .level-card { 
-        width: calc(100% - 10px); /* משאיר מרווח קטן מהצדדים */
-        box-sizing: border-box; /* מבטיח שה-Padding לא יגדיל את האלמנט */
-            display: flex; justify-content: space-between; align-items: center;
-            cursor: pointer; background: #fff; border-radius: 8px;
-        }
+.level-card { 
+    width: 95%; /* משאיר מרווח מהצדדים */
+    max-width: 400px;
+    box-sizing: border-box; /* חשוב מאוד למניעת חריגה */
+    border: 1.5px solid #000; padding: 15px; margin-bottom: 12px;
+    display: flex; justify-content: space-between; align-items: center;
+    cursor: pointer; background: #fff; border-radius: 8px;
+}
+
+/* וודא שרשימת השלבים עצמה ממורכזת */
+#levels-container {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* ממרכז את הכרטיסיות */
+}
+
+
         .level-card.locked { opacity: 0.3; cursor: not-allowed; filter: grayscale(1); }
         .level-card.current { border-width: 3px; transform: scale(1.02); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
 
@@ -96,6 +108,20 @@
     <script src="levels.js"></script>
     <script src="engine.js"></script>
     <script>
+
+// פונקציה להצגת החלון
+function showModal(title, message) {
+    document.getElementById('modal-title').innerText = title;
+    document.getElementById('modal-message').innerText = message;
+    document.getElementById('game-modal').style.display = 'flex';
+}
+
+// פונקציה לסגירת החלון וחזרה לתפריט
+function closeModal() {
+    document.getElementById('game-modal').style.display = 'none';
+    exitGame();
+}
+
         const SAVE_KEY = 'nonogram_progress';
         let currentLevelId = null;
         let currentSolution = [];
@@ -227,9 +253,11 @@ function handleCellClick(r, c) {
             cell.innerText = 'X';
             lives--;
             updateLivesUI();
-            if (lives <= 0) {
-                setTimeout(() => { alert("אופס! נגמרו הנסיונות."); exitGame(); }, 100);
-            }
+if (lives <= 0) {
+    setTimeout(() => { 
+        showModal("אופס...", "נגמרו הלבבות, נסה שוב! 💔");
+    }, 100);
+}
         }
     } else {
         // מצב X (סימון תא ריק)
@@ -241,13 +269,16 @@ function handleCellClick(r, c) {
     }
 }
 
-        function checkWinStatus() {
-            const current = cells.map(r => r.map(c => c.classList.contains('black') ? 1 : 0));
-            if (checkWin(currentSolution, current)) {
-                stopTimer(); saveProgress(currentLevelId);
-                setTimeout(() => { alert("כל הכבוד!"); exitGame(); }, 100);
-            }
-        }
+function checkWinStatus() {
+    const current = cells.map(r => r.map(c => c.classList.contains('black') ? 1 : 0));
+    if (checkWin(currentSolution, current)) {
+        stopTimer();
+        saveProgress(currentLevelId);
+        setTimeout(() => { 
+            showModal("כל הכבוד!", "פתרת את השלב בהצלחה! 🎉");
+        }, 300);
+    }
+}
 
         function showScreen(id) {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active-screen'));
@@ -262,5 +293,14 @@ function handleCellClick(r, c) {
         window.onload = () => { renderMainMenu(); setTimeout(() => showScreen('main-menu'), 2000); };
         setInterval(() => { if (document.getElementById('game-screen').classList.contains('active-screen')) document.getElementById('timer-display').innerText = formatTime(elapsedTime); }, 1000);
     </script>
+
+<div id="game-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:1000; justify-content:center; align-items:center;">
+    <div style="background:white; padding:30px; border-radius:20px; text-align:center; width:80%; max-width:300px; border:3px solid #000;">
+        <h2 id="modal-title" style="margin-top:0; font-size:2rem;"></h2>
+        <p id="modal-message" style="font-size:1.2rem; color:#666;"></p>
+        <button onclick="closeModal()" style="background:#000; color:#white; border:none; padding:12px 25px; border-radius:10px; font-size:1.1rem; cursor:pointer; font-weight:bold; color:white; width:100%;">המשך</button>
+    </div>
+</div>
+
 </body>
 </html>
