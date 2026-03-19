@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>שחור ופתור - My Mind</title>
+    <style>
+        :root { --primary: #000; --bg: #fff; --hint-bg: #f4f4f4; }
+        body {
+            font-family: -apple-system, system-ui, sans-serif;
+            background-color: var(--bg); margin: 0; display: flex; flex-direction: column; align-items: center;
+            user-select: none; -webkit-tap-highlight-color: transparent; overflow-x: hidden;
+        }
+
+        /* ניהול מסכים */
+        .screen { display: none; width: 100%; min-height: 100vh; flex-direction: column; align-items: center; padding: 15px; box-sizing: border-box; }
+        .active-screen { display: flex; }
+
+        /* Splash Screen */
+        #splash-screen { justify-content: center; text-align: center; }
+        .logo-img { width: 220px; height: 220px; object-fit: contain; margin-bottom: 20px; }
+        .logo-text { font-size: 3rem; font-weight: 200; }
+
+        /* תפריט שלבים */
+        #main-menu { padding: 20px 10px; flex-direction: row; justify-content: center; align-items: flex-start; gap: 15px; }
+        .character-sidebar {
+            position: sticky; top: 20px; width: 90px; display: flex; flex-direction: column; align-items: center; flex-shrink: 0;
+            background: #f9f9f9; padding: 10px; border-radius: 15px; border: 1px solid #eee;
+        }
+        .main-char-sprite { 
+            width: 80px; height: 110px; background-image: url('sprite1.jpg');
+            background-size: 240px 440px; background-repeat: no-repeat; border: 1px solid #ddd;
+        }
+        .evolution-label { font-size: 0.8rem; font-weight: bold; margin-top: 8px; color: #333; }
+        .levels-list { flex-grow: 1; max-width: 400px; display: flex; flex-direction: column; }
+        .level-card { 
+            width: 100%; border: 1.5px solid #000; padding: 15px; margin-bottom: 12px;
+            display: flex; justify-content: space-between; align-items: center;
+            cursor: pointer; background: #fff; border-radius: 8px;
+        }
+        .level-card.locked { opacity: 0.3; cursor: not-allowed; filter: grayscale(1); }
+        .level-card.current { border-width: 3px; transform: scale(1.02); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+
+        /* לוח המשחק */
+        .status-bar { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        #lives-container { font-size: 1.5rem; }
+        
+        .game-container { display: grid; gap: 0px; background: #000; border: 2.5px solid #000; width: 100%; max-width: 500px; }
+        
+        .cell { background: #fff; aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 0.1px solid #ddd; box-sizing: border-box; }
+        .cell.black { background: #000 !important; }
+        .cell.x-mark::after { content: "×"; font-size: 1.5rem; color: #bbb; }
+        .cell.error-mark { color: #ff4d4d; font-size: 1.2rem; font-weight: bold; }
+
+        /* רמזים וקווים מודגשים */
+        .hint-cell { background-color: var(--hint-bg) !important; font-size: 10px; font-weight: 900; color: #444; border: 0.1px solid #ccc; display: flex; align-items: center; justify-content: center; }
+        .thick-border-left { border-left: 2.5px solid #000 !important; }
+        .thick-border-bottom { border-bottom: 2.5px solid #000 !important; }
+
+        /* כפתורים */
+        .controls { margin-top: 25px; display: flex; gap: 20px; }
+        .mode-btn { width: 65px; height: 65px; border: 2px solid #000; background: #fff; font-size: 1.8rem; cursor: pointer; border-radius: 12px; }
+        .mode-btn.active { background: #000; color: #fff; }
+    </style>
+</head>
+<body>
+
+    <div id="splash-screen" class="screen active-screen">
+        <div class="logo-text">שחור ופתור</div>
+        <img src="logo1.png" class="logo-img" alt="Logo" onerror="this.style.display='none'">
+        <div style="color: #888;">טוען שלבים...</div>
+    </div>
+
+    <div id="main-menu" class="screen">
+        <div class="character-sidebar">
+            <div id="hero-sprite" class="main-char-sprite"></div>
+            <div class="evolution-label" id="evolution-text">דרגה 1</div>
+        </div>
+        <div class="levels-list" id="levels-container"></div>
+    </div>
+
+    <div id="game-screen" class="screen">
+        <div class="status-bar">
+            <button onclick="exitGame()" style="background:none; border:none; font-size: 1.8rem; cursor:pointer;">✕</button>
+            <div id="lives-container">❤️❤️❤️</div>
+            <div id="timer-display">00:00</div>
+        </div>
+        <div id="game-board" class="game-container"></div>
+        <div class="controls">
+            <button id="btn-paint" class="mode-btn active">⬛</button>
+            <button id="btn-x" class="mode-btn">×</button>
+        </div>
+    </div>
+
+    <script src="levels.js"></script>
+    <script src="engine.js"></script>
+    <script>
+        const SAVE_KEY = 'nonogram_progress';
+        let currentLevelId = null;
+        let currentSolution = [];
+        let currentMode = 'paint';
+        let cells = [];
+        let lives = 3;
+
+        function getProgress() {
+            try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || { completedIds: [] }; } 
+            catch(e) { return { completedIds: [] }; }
+        }
+
+        function saveProgress(id) {
+            let p = getProgress();
+            if (!p.completedIds.includes(id)) {
+                p.completedIds.push(id);
+                localStorage.setItem(SAVE_KEY, JSON.stringify(p));
+            }
+        }
+
+        function updateHeroSprite(count) {
+            const sprite = document.getElementById('hero-sprite');
+            const label = document.getElementById('evolution-text');
+            if (!sprite) return;
+            const idx = Math.min(Math.floor(count / 5), 11);
+            sprite.style.backgroundPosition = `-${(idx % 3) * 80}px -${Math.floor(idx / 3) * 110}px`;
+            label.innerText = `דרגה ${idx + 1}`;
+        }
+
+        function renderMainMenu() {
+            const container = document.getElementById('levels-container');
+            container.innerHTML = '';
+            const progress = getProgress();
+            updateHeroSprite(progress.completedIds.length);
+
+            allLevels.forEach((level, i) => {
+                const solved = progress.completedIds.includes(level.id);
+                const unlocked = i === 0 || progress.completedIds.includes(allLevels[i-1].id);
+                const div = document.createElement('div');
+                div.className = `level-card ${!unlocked ? 'locked' : ''} ${unlocked && !solved ? 'current' : ''}`;
+                div.innerHTML = `<div style="text-align:right"><b>${level.id}. ${level.name}</b><br><small>${level.size}x${level.size}</small></div><div>${solved?'✅':(unlocked?'◀':'🔒')}</div>`;
+                if (unlocked) div.onclick = () => startLevel(level);
+                container.appendChild(div);
+            });
+        }
+
+        function startLevel(level) {
+            lives = 3; updateLivesUI();
+            currentLevelId = level.id;
+            currentSolution = getLevelGrid(level);
+            showScreen('game-screen');
+            initBoard();
+        }
+
+        function updateLivesUI() {
+            document.getElementById('lives-container').innerText = "❤️".repeat(lives) + "🖤".repeat(3-lives);
+        }
+
+function initBoard() {
+    const board = document.getElementById('game-board');
+    const size = currentSolution[0].length;
+    // עמודה ראשונה ברוחב 55px לרמזים, השאר מתחלקות שווה
+    board.style.gridTemplateColumns = `55px repeat(${size}, 1fr)`;
+    board.innerHTML = '';
+    cells = [];
+    const data = generateNonogramData(currentSolution);
+
+    // פינה עליונה (אפורה עם קו מפריד למטה ומשמאל)
+    const corner = document.createElement('div');
+    corner.className = 'hint-cell thick-border-bottom thick-border-left';
+    board.appendChild(corner);
+    
+    // רמזי עמודות (למעלה)
+    data.colHints.forEach((h, i) => {
+        const d = document.createElement('div');
+        // קו מודגש בכל עמודה חמישית
+        d.className = `hint-cell thick-border-bottom ${(i+1)%5===0 ? 'thick-border-left' : ''}`;
+        d.style.flexDirection = 'column'; 
+        d.style.justifyContent = 'flex-end';
+        d.innerHTML = h.join('<br>');
+        board.appendChild(d);
+    });
+
+    // יצירת שורות ותאים
+    for (let r = 0; r < currentSolution.length; r++) {
+        // רמזי שורות (בצד ימין)
+        const rh = document.createElement('div');
+        // הקו המפריד מהלוח הוא thick-border-left
+        rh.className = `hint-cell thick-border-left ${(r+1)%5===0 ? 'thick-border-bottom' : ''}`;
+        rh.innerText = data.rowHints[r].join(', ');
+        board.appendChild(rh);
+        
+        cells[r] = [];
+        for (let c = 0; c < size; c++) {
+            const cell = document.createElement('div');
+            // הדגשת רשת בתוך הלוח
+            cell.className = `cell ${(c+1)%5===0 ? 'thick-border-left' : ''} ${(r+1)%5===0 ? 'thick-border-bottom' : ''}`;
+            cell.onclick = () => handleCellClick(r, c);
+            board.appendChild(cell);
+            cells[r][c] = cell;
+        }
+    }
+    startTimer();
+}
+
+function handleCellClick(r, c) {
+    const cell = cells[r][c];
+    
+    // אם כבר יש טעות (X אדום), התא נעול
+    if (cell.classList.contains('error-mark')) return;
+
+    if (currentMode === 'paint') {
+        // מנגנון ביטול: אם התא כבר שחור, לחיצה נוספת מנקה אותו
+        if (cell.classList.contains('black')) {
+            cell.classList.remove('black');
+            return;
+        }
+
+        // הגנה: אי אפשר לצבוע על X קיים
+        if (cell.classList.contains('x-mark')) return;
+
+        // בדיקה מול הפתרון
+        if (currentSolution[r][c] === 1) {
+            cell.classList.add('black');
+            checkWinStatus();
+        } else {
+            // טעות - סימון X אדום והורדת חיים
+            cell.classList.add('error-mark');
+            cell.innerText = 'X';
+            lives--;
+            updateLivesUI();
+            if (lives <= 0) {
+                setTimeout(() => { alert("אופס! נגמרו הנסיונות."); exitGame(); }, 100);
+            }
+        }
+    } else {
+        // מצב X (סימון תא ריק)
+        // הגנה: אי אפשר לשים X על תא שצבוע כבר בשחור
+        if (cell.classList.contains('black')) return;
+
+        // מנגנון ביטול: לחיצה נוספת על X מעלימה אותו (Toggle)
+        cell.classList.toggle('x-mark');
+    }
+}
+
+        function checkWinStatus() {
+            const current = cells.map(r => r.map(c => c.classList.contains('black') ? 1 : 0));
+            if (checkWin(currentSolution, current)) {
+                stopTimer(); saveProgress(currentLevelId);
+                setTimeout(() => { alert("כל הכבוד!"); exitGame(); }, 100);
+            }
+        }
+
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active-screen'));
+            document.getElementById(id).classList.add('active-screen');
+        }
+
+        function exitGame() { stopTimer(); showScreen('main-menu'); renderMainMenu(); }
+
+        document.getElementById('btn-paint').onclick = () => { currentMode = 'paint'; document.getElementById('btn-paint').classList.add('active'); document.getElementById('btn-x').classList.remove('active'); };
+        document.getElementById('btn-x').onclick = () => { currentMode = 'x'; document.getElementById('btn-x').classList.add('active'); document.getElementById('btn-paint').classList.remove('active'); };
+
+        window.onload = () => { renderMainMenu(); setTimeout(() => showScreen('main-menu'), 2000); };
+        setInterval(() => { if (document.getElementById('game-screen').classList.contains('active-screen')) document.getElementById('timer-display').innerText = formatTime(elapsedTime); }, 1000);
+    </script>
+</body>
+</html>
