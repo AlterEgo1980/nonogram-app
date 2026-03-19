@@ -72,10 +72,13 @@
         .thick-border-bottom { border-bottom: 2.5px solid #000 !important; }
 
         /* בקרים תחתונים */
-        .controls-area {
-            width: 100%; display: flex; justify-content: center; gap: 30px;
-            padding-bottom: calc(var(--safe-bottom) + 10px); padding-top: 10px;
-        }
+.controls-area {
+    width: 100%; display: flex; justify-content: center; gap: 30px;
+    /* הגבהה משמעותית כדי למנוע הסתרה על ידי ממשק הטלפון */
+    padding-bottom: calc(var(--safe-bottom) + 50px); 
+    padding-top: 10px;
+}
+
         .mode-btn { 
             width: 65px; height: 65px; border: 2.5px solid #000; background: #fff; 
             font-size: 1.8rem; border-radius: 15px; display: flex; align-items: center; justify-content: center; 
@@ -148,6 +151,13 @@
     <script src="levels.js"></script>
     <script src="engine.js"></script>
     <script>
+
+let pendingReset = false; // משתנה חדש לניהול מצב אתחול
+function confirmReset() { 
+    pendingReset = true;
+    showConfirmModal("אתחול שלב", "האם למחוק את כל ההתקדמות בשלב הזה?", true); 
+}
+
         const PROGRESS_KEY = 'nonogram_v1_progress';
         const STATE_KEY = 'nonogram_v1_current_state';
         let currentLevelId, currentSolution, currentMode = 'paint', cells = [], isDragging = false;
@@ -200,21 +210,23 @@
         }
 
         // הפעולה המרכזית (כפתור "המשך")
-        function modalPrimaryAction() {
-            if (isWinModal) {
-                exitGame(); // בניצחון: חוזרים לתפריט
-            } else {
-                initBoard(); // באישור ריסטארט: מאתחלים לוח
-            }
-            hideModalOnly();
-        }
+function modalPrimaryAction() {
+    if (isWinModal) {
+        exitGame(); 
+    } else if (pendingReset) {
+        // ביצוע האתחול בפועל
+        localStorage.removeItem(STATE_KEY); // מחיקת השמירה מהזיכרון
+        initBoard(); // בנייה מחדש של הלוח
+        pendingReset = false;
+    }
+    hideModalOnly();
+}
 
-        function hideModalOnly() { 
-            document.getElementById('game-modal').style.display = 'none';
-            document.getElementById('game-modal').classList.remove('win-modal'); // ניקוי ה-Class
-        }
-
-        function confirmReset() { showConfirmModal("אתחול שלב", "האם למחוק את כל ההתקדמות בשלב הזה?", true); }
+function hideModalOnly() { 
+    document.getElementById('game-modal').style.display = 'none';
+    document.getElementById('game-modal').classList.remove('win-modal');
+    pendingReset = false; // איפוס המצב אם לחצו ביטול
+}
 
         // --- ליבת המשחק ---
         function initBoard() {

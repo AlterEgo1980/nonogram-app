@@ -9,9 +9,10 @@
         :root { 
             --primary: #000; --bg: #fff; --hint-bg: #f4f4f4; 
             --success-bg: #d4edda; --success-text: #155724;
-            --safe-bottom: env(safe-area-inset-bottom, 20px);
+            --safe-bottom: env(safe-area-inset-bottom, 10px);
+            --safe-top: env(safe-area-inset-top, 10px);
         }
-        * { touch-action: none; box-sizing: border-box; -webkit-user-select: none; }
+        * { touch-action: none; box-sizing: border-box; -webkit-user-select: none; user-select: none; }
         
         body {
             font-family: -apple-system, system-ui, sans-serif;
@@ -22,16 +23,26 @@
         .screen { display: none; width: 100%; height: 100%; flex-direction: column; align-items: center; }
         .active-screen { display: flex; }
 
-        /* תפריט ראשי - דמות גדולה למעלה */
+        /* מסך פתיחה - חווייתי */
+        #splash-screen { justify-content: center; background: #fff; z-index: 10000; }
+        .logo-img { width: 150px; margin-bottom: 25px; }
+        .loading-text { font-size: 1.5rem; color: #555; font-weight: 300; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+
+        /* תפריט ראשי - דמות גדולה */
         #main-menu { background: #fff; }
         .hero-section {
             width: 100%; height: 45%; display: flex; justify-content: center; align-items: center;
             background: linear-gradient(to bottom, #f0f0f0, #fff); border-bottom: 1px solid #eee;
+            overflow: hidden; position: relative;
         }
         .main-char-sprite { 
-            width: 160px; height: 220px; /* הוכפל מהקוד הקודם */
+            width: 160px; height: 220px;
             background-image: url('sprite1.jpg'); background-size: 480px 880px; 
             background-repeat: no-repeat; image-rendering: pixelated;
+            /* הגדלת הדמות בתוך המרחב */
+            transform: scale(1.6);
+            transform-origin: center;
         }
         .levels-container {
             width: 100%; height: 55%; overflow-y: auto; padding: 20px;
@@ -55,7 +66,7 @@
         .cell.x-mark::after { content: "×"; font-size: 1.2rem; color: #bbb; display: flex; justify-content: center; align-items: center; height: 100%; }
 
         /* רמזים */
-        .hint-cell { background-color: var(--hint-bg); font-size: 10px; font-weight: 900; border: 0.1px solid #ccc; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .hint-cell { background-color: var(--hint-bg); font-size: 10px; font-weight: 900; color: #444; border: 0.1px solid #ccc; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
         .hint-completed { background-color: var(--success-bg) !important; color: var(--success-text) !important; }
         .thick-border-left { border-left: 2.5px solid #000 !important; }
         .thick-border-bottom { border-bottom: 2.5px solid #000 !important; }
@@ -66,22 +77,40 @@
             padding-bottom: calc(var(--safe-bottom) + 10px); padding-top: 10px;
         }
         .mode-btn { 
-            width: 70px; height: 70px; border: 2.5px solid #000; background: #fff; 
-            font-size: 2rem; border-radius: 15px; display: flex; align-items: center; justify-content: center; 
+            width: 65px; height: 65px; border: 2.5px solid #000; background: #fff; 
+            font-size: 1.8rem; border-radius: 15px; display: flex; align-items: center; justify-content: center; 
         }
         .mode-btn.active { background: #000; color: #fff; }
-        .restart-btn { font-size: 1.5rem; background: #eee; border: 1px solid #ccc; width: 45px; height: 45px; border-radius: 50%; }
+        .restart-btn { font-size: 1.4rem; background: #eee; border: 1px solid #ccc; width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #555; }
 
-        /* מודאל */
-        #game-modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; justify-content:center; align-items:center; }
-        .modal-content { background:white; padding:30px; border-radius:25px; text-align:center; width:85%; max-width:320px; border:4px solid #000; }
+        /* מודאל הודעות */
+        #game-modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:9999; justify-content:center; align-items:center; }
+        
+        /* סגנון ברירת מחדל - מודאל מרכזי לאתחול */
+        .modal-content { 
+            background:white; padding:30px; border-radius:25px; text-align:center; width:85%; max-width:320px; 
+            border:4px solid #000; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        /* סגנון מיוחד - באנר תחתון לניצחון */
+        #game-modal.win-modal { 
+            background: transparent; /* ללא רקע שחור המכסה את כל המסך */
+            justify-content: flex-end; /* הזזה לתחתית */
+            padding-bottom: calc(var(--safe-bottom) + 20px);
+        }
+        #game-modal.win-modal .modal-content { 
+            width: 90%; max-width: 400px; border-radius: 20px; border-width: 3px;
+            padding: 20px; box-shadow: 0 -5px 20px rgba(0,0,0,0.2);
+        }
+        #game-modal.win-modal .modal-content h2 { margin-top: 0; margin-bottom: 5px; font-size: 1.5rem; }
+        #game-modal.win-modal .modal-content p { margin-top: 0; margin-bottom: 15px; font-size: 1rem; }
     </style>
 </head>
 <body>
 
-    <div id="splash-screen" class="screen active-screen" style="justify-content:center;">
-        <img src="logo1.png" style="width:150px; margin-bottom:20px;">
-        <div style="font-size:2rem; font-weight:100;">MY MIND</div>
+    <div id="splash-screen" class="screen active-screen">
+        <img src="logo1.png" class="logo-img">
+        <div class="loading-text">טוען את המוח...</div>
     </div>
 
     <div id="main-menu" class="screen">
@@ -93,12 +122,12 @@
 
     <div id="game-screen" class="screen">
         <div class="game-header">
-            <button onclick="exitGame()" style="background:none; border:none; font-size: 2.5rem;">✕</button>
-            <div id="level-title-display" style="font-weight:bold; font-size:1.2rem;"></div>
+            <button onclick="exitGame()" style="background:none; border:none; font-size: 2.2rem; cursor:pointer;">✕</button>
+            <div id="level-title-display" style="font-weight:bold; font-size:1.1rem;"></div>
             <button onclick="confirmReset()" class="restart-btn">🔄</button>
         </div>
         <div id="game-board" class="game-container"></div>
-        <div id="timer-display" style="margin-top:10px; font-family:monospace; font-size:1.1rem;">00:00</div>
+        <div id="timer-display" style="margin-top:10px; font-family:monospace; font-size:1.1rem; letter-spacing:1px;">00:00</div>
         <div class="controls-area">
             <button id="btn-paint" class="mode-btn active">⬛</button>
             <button id="btn-x" class="mode-btn">×</button>
@@ -110,8 +139,8 @@
             <h2 id="modal-title"></h2>
             <p id="modal-message"></p>
             <div id="modal-buttons" style="display:flex; gap:10px; margin-top:20px;">
-                <button id="modal-confirm-btn" onclick="closeModal()" style="flex:1; background:#000; color:#fff; border:none; padding:15px; border-radius:12px; font-weight:bold;">המשך</button>
-                <button id="modal-cancel-btn" onclick="hideModalOnly()" style="display:none; flex:1; background:#eee; border:none; padding:15px; border-radius:12px;">ביטול</button>
+                <button id="modal-confirm-btn" onclick="modalPrimaryAction()" style="flex:1; background:#000; color:#fff; border:none; padding:15px; border-radius:12px; font-weight:bold; cursor:pointer;">המשך</button>
+                <button id="modal-cancel-btn" onclick="hideModalOnly()" style="display:none; flex:1; background:#eee; border:none; padding:15px; border-radius:12px; color:#555; cursor:pointer;">ביטול</button>
             </div>
         </div>
     </div>
@@ -122,6 +151,7 @@
         const PROGRESS_KEY = 'nonogram_v1_progress';
         const STATE_KEY = 'nonogram_v1_current_state';
         let currentLevelId, currentSolution, currentMode = 'paint', cells = [], isDragging = false;
+        let isWinModal = false; // דגל לזיהוי סוג המודאל הפתוח
 
         // --- ניהול זיכרון ---
         function getProgress() { return JSON.parse(localStorage.getItem(PROGRESS_KEY)) || { completedIds: [] }; }
@@ -144,26 +174,47 @@
         function updateHeroVisual(count) {
             const sprite = document.getElementById('hero-sprite');
             const idx = Math.min(Math.floor(count / 5), 11);
+            // התאמה מחדש של ה-BackgroundPosition לפי הגודל החדש (160x220)
             sprite.style.backgroundPosition = `-${(idx % 3) * 160}px -${Math.floor(idx / 3) * 220}px`;
         }
 
-        function showModal(title, msg, isConfirm = false) {
+        // ניהול מודאל חכם
+        function showWinModal(title, msg) {
+            isWinModal = true;
             document.getElementById('modal-title').innerText = title;
             document.getElementById('modal-message').innerText = msg;
-            document.getElementById('modal-cancel-btn').style.display = isConfirm ? 'block' : 'none';
+            document.getElementById('modal-cancel-btn').style.display = 'none';
+            // הוספת Class לעיצוב כבאנר תחתון
+            document.getElementById('game-modal').classList.add('win-modal');
             document.getElementById('game-modal').style.display = 'flex';
         }
 
-        function closeModal() {
-            if (document.getElementById('modal-cancel-btn').style.display === 'block') {
-                initBoard(); // במקרה של אישור ריסטארט
+        function showConfirmModal(title, msg) {
+            isWinModal = false;
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-message').innerText = msg;
+            document.getElementById('modal-cancel-btn').style.display = 'block';
+            // וודא שאין Class של ניצחון
+            document.getElementById('game-modal').classList.remove('win-modal');
+            document.getElementById('game-modal').style.display = 'flex';
+        }
+
+        // הפעולה המרכזית (כפתור "המשך")
+        function modalPrimaryAction() {
+            if (isWinModal) {
+                exitGame(); // בניצחון: חוזרים לתפריט
             } else {
-                exitGame();
+                initBoard(); // באישור ריסטארט: מאתחלים לוח
             }
             hideModalOnly();
         }
-        function hideModalOnly() { document.getElementById('game-modal').style.display = 'none'; }
-        function confirmReset() { showModal("אתחול שלב", "האם למחוק את כל ההתקדמות בשלב הזה?", true); }
+
+        function hideModalOnly() { 
+            document.getElementById('game-modal').style.display = 'none';
+            document.getElementById('game-modal').classList.remove('win-modal'); // ניקוי ה-Class
+        }
+
+        function confirmReset() { showConfirmModal("אתחול שלב", "האם למחוק את כל ההתקדמות בשלב הזה?", true); }
 
         // --- ליבת המשחק ---
         function initBoard() {
@@ -229,11 +280,11 @@
                 // שורות
                 const rowSeq = getSeq(cells[i].map(c => c.classList.contains('black') ? 1 : 0));
                 const rEl = document.getElementById(`row-hint-${i}`);
-                rEl.className = `hint-cell thick-border-left ${(i+1)%5===0 ? 'thick-border-bottom' : ''} ${JSON.stringify(rowSeq)===JSON.stringify(data.rowHints[i]) ? 'hint-completed' : ''}`;
+                if (rEl) rEl.className = `hint-cell thick-border-left ${(i+1)%5===0 ? 'thick-border-bottom' : ''} ${JSON.stringify(rowSeq)===JSON.stringify(data.rowHints[i]) ? 'hint-completed' : ''}`;
                 // עמודות
                 const colSeq = getSeq(cells.map(row => row[i].classList.contains('black') ? 1 : 0));
                 const cEl = document.getElementById(`col-hint-${i}`);
-                cEl.className = `hint-cell thick-border-bottom ${(i+1)%5===0 ? 'thick-border-left' : ''} ${JSON.stringify(colSeq)===JSON.stringify(data.colHints[i]) ? 'hint-completed' : ''}`;
+                if (cEl) cEl.className = `hint-cell thick-border-bottom ${(i+1)%5===0 ? 'thick-border-left' : ''} ${JSON.stringify(colSeq)===JSON.stringify(data.colHints[i]) ? 'hint-completed' : ''}`;
             }
         }
 
@@ -243,7 +294,8 @@
             const cur = cells.map(r => r.map(c => c.classList.contains('black') ? 1 : 0));
             if (checkWin(currentSolution, cur)) {
                 stopTimer(); saveWin(currentLevelId);
-                setTimeout(() => showModal("פיצחת את זה!", "השלמת את האתגר בהצלחה 🎉"), 400);
+                // הצגת מודאל ניצחון מעוצב (באנר תחתון)
+                setTimeout(() => showWinModal("פיצחת את המוח!", "האתגר הושלם בהצלחה 🎉"), 400);
             }
         }
 
@@ -281,7 +333,8 @@
         document.getElementById('btn-x').onclick = () => { currentMode = 'x'; document.getElementById('btn-x').classList.add('active'); document.getElementById('btn-paint').classList.remove('active'); };
 
         window.onload = () => { 
-            setTimeout(() => { showScreen('main-menu'); renderMainMenu(); }, 1200); 
+            // קאונטר מלאכותי של 3 שניות (3000ms)
+            setTimeout(() => { showScreen('main-menu'); renderMainMenu(); }, 3000); 
         };
 
         // Service Worker for Offline
