@@ -1,3 +1,9 @@
+cd "/f/My Drive/Projects/Apps/Nonogram/nonogram-app"
+
+
+
+
+
 git add .
-git commit -m "name the add"
+git commit -m "change0"
 git push
