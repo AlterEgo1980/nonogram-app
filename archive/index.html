@@ -33,11 +33,24 @@
         }
         .evolution-label { font-size: 0.8rem; font-weight: bold; margin-top: 8px; color: #333; }
         .levels-list { flex-grow: 1; max-width: 400px; display: flex; flex-direction: column; }
-        .level-card { 
-            width: 100%; border: 1.5px solid #000; padding: 15px; margin-bottom: 12px;
-            display: flex; justify-content: space-between; align-items: center;
-            cursor: pointer; background: #fff; border-radius: 8px;
-        }
+.level-card { 
+    width: 95%; /* משאיר מרווח מהצדדים */
+    max-width: 400px;
+    box-sizing: border-box; /* חשוב מאוד למניעת חריגה */
+    border: 1.5px solid #000; padding: 15px; margin-bottom: 12px;
+    display: flex; justify-content: space-between; align-items: center;
+    cursor: pointer; background: #fff; border-radius: 8px;
+}
+
+/* וודא שרשימת השלבים עצמה ממורכזת */
+#levels-container {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* ממרכז את הכרטיסיות */
+}
+
+
         .level-card.locked { opacity: 0.3; cursor: not-allowed; filter: grayscale(1); }
         .level-card.current { border-width: 3px; transform: scale(1.02); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
 
@@ -54,7 +67,7 @@
 
         /* רמזים וקווים מודגשים */
         .hint-cell { background-color: var(--hint-bg) !important; font-size: 10px; font-weight: 900; color: #444; border: 0.1px solid #ccc; display: flex; align-items: center; justify-content: center; }
-        .thick-border-right { border-right: 2.5px solid #000 !important; }
+        .thick-border-left { border-left: 2.5px solid #000 !important; }
         .thick-border-bottom { border-bottom: 2.5px solid #000 !important; }
 
         /* כפתורים */
@@ -95,6 +108,20 @@
     <script src="levels.js"></script>
     <script src="engine.js"></script>
     <script>
+
+// פונקציה להצגת החלון
+function showModal(title, message) {
+    document.getElementById('modal-title').innerText = title;
+    document.getElementById('modal-message').innerText = message;
+    document.getElementById('game-modal').style.display = 'flex';
+}
+
+// פונקציה לסגירת החלון וחזרה לתפריט
+function closeModal() {
+    document.getElementById('game-modal').style.display = 'none';
+    exitGame();
+}
+
         const SAVE_KEY = 'nonogram_progress';
         let currentLevelId = null;
         let currentSolution = [];
@@ -153,73 +180,105 @@
             document.getElementById('lives-container').innerText = "❤️".repeat(lives) + "🖤".repeat(3-lives);
         }
 
-        function initBoard() {
-            const board = document.getElementById('game-board');
-            const size = currentSolution[0].length;
-            board.style.gridTemplateColumns = `55px repeat(${size}, 1fr)`;
-            board.innerHTML = '';
-            cells = [];
-            const data = generateNonogramData(currentSolution);
+function initBoard() {
+    const board = document.getElementById('game-board');
+    const size = currentSolution[0].length;
+    // עמודה ראשונה ברוחב 55px לרמזים, השאר מתחלקות שווה
+    board.style.gridTemplateColumns = `55px repeat(${size}, 1fr)`;
+    board.innerHTML = '';
+    cells = [];
+    const data = generateNonogramData(currentSolution);
 
-            // פינה
-            board.appendChild(Object.assign(document.createElement('div'), {className: 'hint-cell thick-border-bottom thick-border-right'}));
-            
-            // רמזי עמודות
-            data.colHints.forEach((h, i) => {
-                const d = document.createElement('div');
-                d.className = `hint-cell thick-border-bottom ${(i+1)%5===0 ? 'thick-border-right' : ''}`;
-                d.style.flexDirection = 'column'; d.style.justifyContent = 'flex-end';
-                d.innerHTML = h.join('<br>');
-                board.appendChild(d);
-            });
+    // פינה עליונה (אפורה עם קו מפריד למטה ומשמאל)
+    const corner = document.createElement('div');
+    corner.className = 'hint-cell thick-border-bottom thick-border-left';
+    board.appendChild(corner);
+    
+    // רמזי עמודות (למעלה)
+    data.colHints.forEach((h, i) => {
+        const d = document.createElement('div');
+        // קו מודגש בכל עמודה חמישית
+        d.className = `hint-cell thick-border-bottom ${(i+1)%5===0 ? 'thick-border-left' : ''}`;
+        d.style.flexDirection = 'column'; 
+        d.style.justifyContent = 'flex-end';
+        d.innerHTML = h.join('<br>');
+        board.appendChild(d);
+    });
 
-            // שורות ותאים
-            for (let r = 0; r < currentSolution.length; r++) {
-                const rh = document.createElement('div');
-                rh.className = `hint-cell thick-border-right ${(r+1)%5===0 ? 'thick-border-bottom' : ''}`;
-                rh.innerText = data.rowHints[r].join(', ');
-                board.appendChild(rh);
-                
-                cells[r] = [];
-                for (let c = 0; c < size; c++) {
-                    const cell = document.createElement('div');
-                    cell.className = `cell ${(c+1)%5===0 ? 'thick-border-right' : ''} ${(r+1)%5===0 ? 'thick-border-bottom' : ''}`;
-                    cell.onclick = () => handleCellClick(r, c);
-                    board.appendChild(cell);
-                    cells[r][c] = cell;
-                }
-            }
-            startTimer();
+    // יצירת שורות ותאים
+    for (let r = 0; r < currentSolution.length; r++) {
+        // רמזי שורות (בצד ימין)
+        const rh = document.createElement('div');
+        // הקו המפריד מהלוח הוא thick-border-left
+        rh.className = `hint-cell thick-border-left ${(r+1)%5===0 ? 'thick-border-bottom' : ''}`;
+        rh.innerText = data.rowHints[r].join(', ');
+        board.appendChild(rh);
+        
+        cells[r] = [];
+        for (let c = 0; c < size; c++) {
+            const cell = document.createElement('div');
+            // הדגשת רשת בתוך הלוח
+            cell.className = `cell ${(c+1)%5===0 ? 'thick-border-left' : ''} ${(r+1)%5===0 ? 'thick-border-bottom' : ''}`;
+            cell.onclick = () => handleCellClick(r, c);
+            board.appendChild(cell);
+            cells[r][c] = cell;
+        }
+    }
+    startTimer();
+}
+
+function handleCellClick(r, c) {
+    const cell = cells[r][c];
+    
+    // אם כבר יש טעות (X אדום), התא נעול
+    if (cell.classList.contains('error-mark')) return;
+
+    if (currentMode === 'paint') {
+        // מנגנון ביטול: אם התא כבר שחור, לחיצה נוספת מנקה אותו
+        if (cell.classList.contains('black')) {
+            cell.classList.remove('black');
+            return;
         }
 
-        function handleCellClick(r, c) {
-            const cell = cells[r][c];
-            if (cell.classList.contains('error-mark')) return;
+        // הגנה: אי אפשר לצבוע על X קיים
+        if (cell.classList.contains('x-mark')) return;
 
-            if (currentMode === 'paint') {
-                if (cell.classList.contains('black')) { cell.classList.remove('black'); return; }
-                if (cell.classList.contains('x-mark')) return; // חסימת צביעה על X
-
-                if (currentSolution[r][c] === 1) {
-                    cell.classList.add('black'); checkWinStatus();
-                } else {
-                    cell.classList.add('error-mark'); cell.innerText = 'X';
-                    lives--; updateLivesUI();
-                    if (lives <= 0) { setTimeout(() => { alert("הפסדת!"); exitGame(); }, 100); }
-                }
-            } else {
-                if (cell.classList.contains('black')) return; // חסימת X על שחור
-                cell.classList.toggle('x-mark');
-            }
+        // בדיקה מול הפתרון
+        if (currentSolution[r][c] === 1) {
+            cell.classList.add('black');
+            checkWinStatus();
+        } else {
+            // טעות - סימון X אדום והורדת חיים
+            cell.classList.add('error-mark');
+            cell.innerText = 'X';
+            lives--;
+            updateLivesUI();
+if (lives <= 0) {
+    setTimeout(() => { 
+        showModal("אופס...", "נגמרו הלבבות, נסה שוב! 💔");
+    }, 100);
+}
         }
+    } else {
+        // מצב X (סימון תא ריק)
+        // הגנה: אי אפשר לשים X על תא שצבוע כבר בשחור
+        if (cell.classList.contains('black')) return;
 
-        function checkWinStatus() {
-            const current = cells.map(r => r.map(c => c.classList.contains('black') ? 1 : 0));
-            if (checkWin(currentSolution, current)) {
-                stopTimer(); saveProgress(currentLevelId);
-                setTimeout(() => { alert("כל הכבוד!"); exitGame(); }, 100);
-            }
-        }
+        // מנגנון ביטול: לחיצה נוספת על X מעלימה אותו (Toggle)
+        cell.classList.toggle('x-mark');
+    }
+}
+
+function checkWinStatus() {
+    const current = cells.map(r => r.map(c => c.classList.contains('black') ? 1 : 0));
+    if (checkWin(currentSolution, current)) {
+        stopTimer();
+        saveProgress(currentLevelId);
+        setTimeout(() => { 
+            showModal("כל הכבוד!", "פתרת את השלב בהצלחה! 🎉");
+        }, 300);
+    }
+}
 
         function showScreen(id) {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active-screen'));
@@ -234,5 +293,14 @@
         window.onload = () => { renderMainMenu(); setTimeout(() => showScreen('main-menu'), 2000); };
         setInterval(() => { if (document.getElementById('game-screen').classList.contains('active-screen')) document.getElementById('timer-display').innerText = formatTime(elapsedTime); }, 1000);
     </script>
+
+<div id="game-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:1000; justify-content:center; align-items:center;">
+    <div style="background:white; padding:30px; border-radius:20px; text-align:center; width:80%; max-width:300px; border:3px solid #000;">
+        <h2 id="modal-title" style="margin-top:0; font-size:2rem;"></h2>
+        <p id="modal-message" style="font-size:1.2rem; color:#666;"></p>
+        <button onclick="closeModal()" style="background:#000; color:#white; border:none; padding:12px 25px; border-radius:10px; font-size:1.1rem; cursor:pointer; font-weight:bold; color:white; width:100%;">המשך</button>
+    </div>
+</div>
+
 </body>
 </html>
