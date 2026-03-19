@@ -4,6 +4,7 @@ const ASSETS = [
   './index.html',
   './engine.js',
   './levels.js',
+  './manifest.json', // כדאי שיהיה ב-Cache
   './sprite1.jpg',
   './logo1.png'
 ];
