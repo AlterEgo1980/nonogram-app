@@ -34,7 +34,8 @@
         .evolution-label { font-size: 0.8rem; font-weight: bold; margin-top: 8px; color: #333; }
         .levels-list { flex-grow: 1; max-width: 400px; display: flex; flex-direction: column; }
         .level-card { 
-            width: 100%; border: 1.5px solid #000; padding: 15px; margin-bottom: 12px;
+        width: calc(100% - 10px); /* משאיר מרווח קטן מהצדדים */
+        box-sizing: border-box; /* מבטיח שה-Padding לא יגדיל את האלמנט */
             display: flex; justify-content: space-between; align-items: center;
             cursor: pointer; background: #fff; border-radius: 8px;
         }
