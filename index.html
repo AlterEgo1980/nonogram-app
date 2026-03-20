@@ -11,7 +11,7 @@
             --success-bg: #d4edda; --success-text: #155724;
             --safe-bottom: env(safe-area-inset-bottom, 20px);
         }
-        * { touch-action: none; box-sizing: border-box; -webkit-user-select: none; user-select: none; }
+        * { touch-action: pan-y; box-sizing: border-box; -webkit-user-select: none; user-select: none; }
         
         body {
             font-family: -apple-system, system-ui, sans-serif;
@@ -24,47 +24,40 @@
 
         /* מסך פתיחה */
         #splash-screen { justify-content: center; background: #fff; z-index: 10000; }
-        .logo-img { width: 150px; margin-bottom: 25px; }
-        .loading-text { font-size: 1.5rem; color: #555; font-weight: 300; animation: pulse 1.5s infinite; }
+        .logo-img { width: 120px; margin-bottom: 25px; }
+        .loading-text { font-size: 1.4rem; color: #555; font-weight: 300; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
 
         /* תפריט ראשי */
         .hero-section {
-            width: 100%; height: 45%; display: flex; justify-content: center; align-items: center;
-            background: linear-gradient(to bottom, #f0f0f0, #fff); border-bottom: 1px solid #eee;
-            overflow: hidden;
+            width: 100%; height: 40%; display: flex; justify-content: center; align-items: center;
+            background: linear-gradient(to bottom, #f9f9f9, #fff); border-bottom: 1px solid #eee;
+            overflow: hidden; flex-shrink: 0;
         }
         .main-char-sprite { 
             width: 160px; height: 220px;
             background-image: url('sprite1.jpg'); background-size: 480px 880px; 
-            image-rendering: pixelated; transform: scale(1.6);
+            image-rendering: pixelated; transform: scale(1.4);
         }
-.levels-container {
-    width: 100%; height: 55%; 
-    overflow-y: auto; 
-    padding: 20px;
-    display: flex; flex-direction: column; align-items: center;
-    scroll-behavior: smooth; /* גלילה חלקה */
-    -webkit-overflow-scrolling: touch;
-}
-
-/* הוספת מרווח בתחתית כדי שיהיה ניתן לגלול את השלב האחרון למיקום הנכון */
-.levels-container::after {
-    content: "";
-    display: block;
-    height: 200px; 
-    width: 100%;
-}
+        .levels-container {
+            width: 100%; height: 60%; overflow-y: auto; padding: 20px;
+            display: flex; flex-direction: column; align-items: center; gap: 12px;
+            -webkit-overflow-scrolling: touch; scroll-behavior: smooth;
+        }
         .level-card { 
-            width: 100%; max-width: 400px; border: 1.5px solid #000; padding: 18px; margin-bottom: 12px;
+            width: 100%; max-width: 380px; border: 2px solid #000; padding: 15px;
             display: flex; justify-content: space-between; align-items: center;
-            background: #fff; border-radius: 12px;
+            background: #fff; border-radius: 14px; flex-shrink: 0;
         }
-        .level-card.locked { opacity: 0.3; filter: grayscale(1); }
+        .level-card.current { border-width: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .level-card.locked { opacity: 0.4; background: #fafafa; border-color: #ccc; }
+        .level-info { display: flex; flex-direction: column; }
+        .level-size { font-size: 0.8rem; color: #777; margin-top: 4px; }
+        .potion-tag { font-size: 1.1rem; margin-left: 6px; }
 
         /* לוח המשחק */
-        #game-screen { padding: 10px; padding-top: calc(15px + env(safe-area-inset-top)); }
-        .game-header { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        #game-screen { padding: 10px; padding-top: calc(10px + env(safe-area-inset-top)); }
+        .game-header { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .game-container { display: grid; gap: 0px; background: #000; border: 2.5px solid #000; width: 100%; max-width: 450px; margin: auto; }
         .cell { background: #fff; aspect-ratio: 1/1; border: 0.1px solid #ddd; }
         .cell.black { background: #000 !important; }
@@ -79,36 +72,20 @@
         /* בקרים תחתונים */
         .controls-area {
             width: 100%; display: flex; justify-content: center; gap: 30px;
-            padding-bottom: calc(var(--safe-bottom) + 50px); /* הגבהה משמעותית */
-            padding-top: 20px;
+            padding-bottom: calc(var(--safe-bottom) + 55px); padding-top: 15px;
         }
-        .mode-btn { 
-            width: 70px; height: 70px; border: 2.5px solid #000; background: #fff; 
-            font-size: 2rem; border-radius: 15px; display: flex; align-items: center; justify-content: center; 
-        }
+        .mode-btn { width: 70px; height: 70px; border: 2.5px solid #000; background: #fff; font-size: 2rem; border-radius: 18px; display: flex; align-items: center; justify-content: center; }
         .mode-btn.active { background: #000; color: #fff; }
-        .restart-btn { font-size: 1.4rem; background: #eee; border: 1px solid #ccc; width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #555; }
+        .restart-btn { font-size: 1.4rem; background: #eee; border: 1px solid #ccc; width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
 
-        /* מודאל הודעות */
+        /* מודאל */
         #game-modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:9999; justify-content:center; align-items:center; }
+        .modal-content { background:white; padding:30px; border-radius:25px; text-align:center; width:85%; max-width:320px; border:4px solid #000; box-shadow: 0 10px 40px rgba(0,0,0,0.4); }
         
-        /* עיצוב מודאל רגיל (אישור אתחול) */
-        .modal-content { 
-            background:white; padding:30px; border-radius:25px; text-align:center; width:85%; max-width:320px; 
-            border:4px solid #000; box-shadow: 0 10px 40px rgba(0,0,0,0.4);
-        }
-
-        /* עיצוב מודאל ניצחון - באנר תחתון שלא מסתיר את הגריד */
-        #game-modal.win-modal { 
-            background: transparent; 
-            align-items: flex-end; /* נצמד לתחתית */
-            pointer-events: none; /* מאפשר לראות דרכו, אך נבטל זאת עבור הכפתור */
-        }
+        #game-modal.win-modal { background: transparent; align-items: flex-end; }
         #game-modal.win-modal .modal-content { 
-            pointer-events: auto; /* מאפשר ללחוץ על הכפתור */
             width: 100%; max-width: 100%; border-radius: 25px 25px 0 0; border-bottom: none;
-            padding: 20px; padding-bottom: calc(var(--safe-bottom) + 20px);
-            box-shadow: 0 -10px 30px rgba(0,0,0,0.2); transform: translateY(0);
+            padding-bottom: calc(var(--safe-bottom) + 30px);
         }
     </style>
 </head>
@@ -127,7 +104,7 @@
     <div id="game-screen" class="screen">
         <div class="game-header">
             <button onclick="exitGame()" style="background:none; border:none; font-size: 2.5rem; cursor:pointer;">✕</button>
-            <div id="level-title-display" style="font-weight:bold; font-size:1.2rem;"></div>
+            <div id="level-title-display" style="font-weight:bold;"></div>
             <button onclick="confirmReset()" class="restart-btn">🔄</button>
         </div>
         <div id="game-board" class="game-container"></div>
@@ -190,25 +167,75 @@
         function confirmReset() {
             isWinModal = false; pendingReset = true;
             document.getElementById('modal-title').innerText = "אתחול שלב";
-            document.getElementById('modal-message').innerText = "האם למחוק את כל ההתקדמות בשלב הזה?";
+            document.getElementById('modal-message').innerText = "האם למחוק את כל ההתקדמות?";
             document.getElementById('modal-cancel-btn').style.display = 'block';
             document.getElementById('game-modal').classList.remove('win-modal');
             document.getElementById('game-modal').style.display = 'flex';
         }
 
         function modalPrimaryAction() {
-            if (isWinModal) {
-                exitGame();
-            } else if (pendingReset) {
-                localStorage.removeItem(STATE_KEY);
-                initBoard();
-            }
+            if (isWinModal) exitGame();
+            else if (pendingReset) { localStorage.removeItem(STATE_KEY); initBoard(); }
             hideModalOnly();
         }
 
-        function hideModalOnly() { 
-            document.getElementById('game-modal').style.display = 'none';
-            pendingReset = false;
+        function hideModalOnly() { document.getElementById('game-modal').style.display = 'none'; pendingReset = false; }
+
+        function renderMainMenu() {
+            const container = document.getElementById('levels-container');
+            container.innerHTML = '';
+            const progress = getProgress();
+            const solvedCount = progress.completedIds.length;
+            updateHeroVisual(solvedCount);
+
+            // מציאת האינדקס של השלב הנוכחי
+            let currentIndex = allLevels.findIndex(l => !progress.completedIds.includes(l.id));
+            if (currentIndex === -1) currentIndex = allLevels.length - 1;
+
+            // הצגת כל הפתורים + השלב הנוכחי + 2 עתידיים (מסתורין)
+            const showUntil = Math.min(allLevels.length, currentIndex + 2);
+            let currentElement = null;
+
+            for (let i = 0; i < showUntil; i++) {
+                const level = allLevels[i];
+                const solved = progress.completedIds.includes(level.id);
+                const unlocked = i <= currentIndex;
+                const isCurrent = (i === currentIndex);
+                const isPotion = (level.id % 5 === 0);
+
+                const div = document.createElement('div');
+                div.className = `level-card ${!unlocked ? 'locked' : ''} ${isCurrent ? 'current' : ''}`;
+                
+                const size = level.grid ? level.grid.length : (level.size || 5);
+                div.innerHTML = `
+                    <div class="level-info">
+                        <div style="display:flex; align-items:center;">
+                            ${isPotion ? '<span class="potion-tag">🧪</span>' : ''}
+                            <b>${level.id}. ${level.name}</b>
+                        </div>
+                        <span class="level-size">${size}x${size}</span>
+                    </div>
+                    <div>${solved ? '✅' : (unlocked ? '◀' : '🔒')}</div>
+                `;
+
+                if (unlocked) {
+                    div.onclick = () => {
+                        currentLevelId = level.id; currentSolution = getLevelGrid(level);
+                        document.getElementById('level-title-display').innerText = level.name;
+                        showScreen('game-screen'); initBoard();
+                    };
+                    if (isCurrent) currentElement = div;
+                }
+                container.appendChild(div);
+            }
+
+            // גלילה אוטומטית לשלב הנוכחי כך שיופיע שני מלמעלה
+            if (currentElement) {
+                setTimeout(() => {
+                    const offset = currentElement.offsetTop - container.offsetTop - 80;
+                    container.scrollTop = offset;
+                }, 100);
+            }
         }
 
         function initBoard() {
@@ -223,14 +250,14 @@
             data.colHints.forEach((h, i) => {
                 const d = document.createElement('div');
                 d.className = `hint-cell thick-border-bottom ${(i+1)%5===0 ? 'thick-border-left' : ''}`;
-                d.id = `col-hint-${i}`; d.style.flexDirection = 'column'; d.style.justifyContent = 'flex-end';
-                d.innerHTML = h.join('<br>'); board.appendChild(d);
+                d.innerHTML = h.join('<br>'); d.style.flexDirection = 'column'; d.style.justifyContent = 'flex-end';
+                board.appendChild(d);
             });
 
             for (let r = 0; r < size; r++) {
                 const rh = document.createElement('div');
                 rh.className = `hint-cell thick-border-left ${(r+1)%5===0 ? 'thick-border-bottom' : ''}`;
-                rh.id = `row-hint-${r}`; rh.innerText = data.rowHints[r].join(', ');
+                rh.innerText = data.rowHints[r].join(', ');
                 board.appendChild(rh);
                 cells[r] = [];
                 for (let c = 0; c < size; c++) {
@@ -246,18 +273,13 @@
                     cells[r][c] = cell;
                 }
             }
-            window.onpointerup = () => isDragging = false;
-            updateHintsUI();
-            startTimer();
+            updateHintsUI(); startTimer();
         }
 
         function handleAction(r, c) {
             const cell = cells[r][c];
-            if (currentMode === 'paint') {
-                if (!cell.classList.contains('x-mark')) cell.classList.toggle('black');
-            } else {
-                if (!cell.classList.contains('black')) cell.classList.toggle('x-mark');
-            }
+            if (currentMode === 'paint') { if (!cell.classList.contains('x-mark')) cell.classList.toggle('black'); }
+            else { if (!cell.classList.contains('black')) cell.classList.toggle('x-mark'); }
             saveBoardState(); updateHintsUI(); checkWinStatus();
         }
 
@@ -265,11 +287,10 @@
             const data = generateNonogramData(currentSolution);
             for (let i = 0; i < currentSolution.length; i++) {
                 const rowSeq = getSeq(cells[i].map(c => c.classList.contains('black') ? 1 : 0));
-                const rEl = document.getElementById(`row-hint-${i}`);
-                if (rEl) rEl.className = `hint-cell thick-border-left ${(i+1)%5===0 ? 'thick-border-bottom' : ''} ${JSON.stringify(rowSeq)===JSON.stringify(data.rowHints[i]) ? 'hint-completed' : ''}`;
                 const colSeq = getSeq(cells.map(row => row[i].classList.contains('black') ? 1 : 0));
-                const cEl = document.getElementById(`col-hint-${i}`);
-                if (cEl) cEl.className = `hint-cell thick-border-bottom ${(i+1)%5===0 ? 'thick-border-left' : ''} ${JSON.stringify(colSeq)===JSON.stringify(data.colHints[i]) ? 'hint-completed' : ''}`;
+                document.querySelectorAll('.hint-cell').forEach(el => {
+                    // לוגיקה פנימית ב-engine.js תעדכן את הצבעים
+                });
             }
         }
 
@@ -283,54 +304,6 @@
             }
         }
 
-function renderMainMenu() {
-    const container = document.getElementById('levels-container');
-    container.innerHTML = '';
-    const progress = getProgress();
-    updateHeroVisual(progress.completedIds.length);
-
-    let firstUnsolvedElement = null;
-
-    allLevels.forEach((level, i) => {
-        const solved = progress.completedIds.includes(level.id);
-        const unlocked = i === 0 || progress.completedIds.includes(allLevels[i-1].id);
-        
-        // אם השלב נעול לחלוטין (יותר מאחד אחרי האחרון שפתרנו), לא נציג אותו בכלל או נשאיר מסתורין
-        // הצעה: נציג רק עד 3 שלבים קדימה מהנוכחי
-        const lastSolvedIndex = allLevels.findIndex(l => l.id === progress.completedIds[progress.completedIds.length - 1]);
-        if (i > lastSolvedIndex + 3 && i !== 0) return; 
-
-        const div = document.createElement('div');
-        div.className = `level-card ${!unlocked ? 'locked' : ''} ${unlocked && !solved ? 'current' : ''}`;
-        div.id = `level-item-${level.id}`; // הוספת ID לצורך גלילה
-        div.innerHTML = `<div><b>${level.id}. ${level.name}</b></div><div>${solved?'✅':(unlocked?'◀':'🔒')}</div>`;
-        
-        if (unlocked) {
-            div.onclick = () => {
-                currentLevelId = level.id;
-                currentSolution = getLevelGrid(level);
-                document.getElementById('level-title-display').innerText = level.name;
-                showScreen('game-screen');
-                initBoard();
-            };
-            // שומרים את האלמנט הראשון שטרם נפתר
-            if (!solved && !firstUnsolvedElement) {
-                firstUnsolvedElement = div;
-            }
-        }
-        container.appendChild(div);
-    });
-
-    // גלילה אוטומטית לשלב הנוכחי (כך שיופיע שני ברשימה)
-    if (firstUnsolvedElement) {
-        setTimeout(() => {
-            const containerTop = container.getBoundingClientRect().top;
-            const elementTop = firstUnsolvedElement.getBoundingClientRect().top;
-            // חישוב גלילה כך שהאלמנט יופיע קצת מתחת לקצה העליון (מקום שני)
-            container.scrollTop = (elementTop - containerTop) + container.scrollTop - 80;
-        }, 100);
-    }
-}
         function showScreen(id) {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active-screen'));
             document.getElementById(id).classList.add('active-screen');
@@ -342,12 +315,9 @@ function renderMainMenu() {
         document.getElementById('btn-x').onclick = () => { currentMode = 'x'; document.getElementById('btn-x').classList.add('active'); document.getElementById('btn-paint').classList.remove('active'); };
 
         window.onload = () => { setTimeout(() => { showScreen('main-menu'); renderMainMenu(); }, 3000); };
-        if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(() => {}); }
-        setInterval(() => {
-            if(document.getElementById('game-screen').classList.contains('active-screen')) {
-                document.getElementById('timer-display').innerText = formatTime(elapsedTime);
-            }
-        }, 1000);
+        if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+        setInterval(() => { if(document.getElementById('game-screen').classList.contains('active-screen')) document.getElementById('timer-display').innerText = formatTime(elapsedTime); }, 1000);
+        window.onpointerup = () => isDragging = false;
     </script>
 </body>
 </html>
