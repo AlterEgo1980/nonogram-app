@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nonogram-v1';
+const CACHE_NAME = 'nonogram-v2'; // שינינו מ-v1 ל-v2
 const ASSETS = [
   './',
   './index.html',
