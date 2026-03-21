@@ -3,108 +3,117 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>שחור ופתור - My Mind</title>
+    <title>Synapse - Mind Training</title>
     <link rel="manifest" href="manifest.json">
     <style>
         :root { 
             --primary: #000; --bg: #fff; --hint-bg: #f4f4f4; 
-            --success-bg: #d4edda; --success-text: #155724;
             --safe-bottom: env(safe-area-inset-bottom, 20px);
-            --hint-solved: #dcfce7; /* ירוק בהיר לשורות שהושלמו */
+            --hint-solved: #dcfce7;
         }
         * { touch-action: pan-y; box-sizing: border-box; -webkit-user-select: none; user-select: none; }
         
         body {
             font-family: -apple-system, system-ui, sans-serif;
-            background-color: var(--bg); margin: 0; 
-            display: flex; flex-direction: column; 
-            align-items: center; 
-            height: 100dvh;
-            overflow: hidden;
+            background-color: var(--bg); margin: 0; padding: 0;
+            display: flex; flex-direction: column; align-items: center; 
+            height: 100dvh; overflow: hidden;
         }
 
-        .screen { display: none; width: 100%; height: 100%; flex-direction: column; align-items: center; }
+        .screen { display: none; width: 100%; height: 100%; flex-direction: column; align-items: center; overflow: hidden; }
         .active-screen { display: flex; }
 
-        #splash-screen { justify-content: center; background: #fff; z-index: 10000; }
-        .logo-img { width: 120px; margin-bottom: 25px; }
-        .loading-text { font-size: 1.4rem; color: #555; font-weight: 300; animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+        /* Splash Screen */
+        #splash-screen { justify-content: center; background: #fff; }
+        .logo-img { width: 140px; margin-bottom: 25px; border-radius: 20%; }
+        .loader-dots { display: flex; gap: 8px; margin-top: 20px; }
+        .dot { width: 10px; height: 10px; background: #000; border-radius: 50%; animation: bounce 0.5s infinite alternate; }
+        .dot:nth-child(2) { animation-delay: 0.2s; }
+        .dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-10px); } }
 
-        .hero-section {
-            width: 100%; height: 40%; display: flex; justify-content: center; align-items: center;
-            background: linear-gradient(to bottom, #f9f9f9, #fff); border-bottom: 1px solid #eee;
-            overflow: hidden; flex-shrink: 0;
+        /* HUB Screen */
+        #hub-screen { background: #f9f9f9; padding-top: 60px; }
+        .hub-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 25px; width: 100%; max-width: 500px; }
+        .hub-item { 
+            background: #fff; border: 3px solid #000; border-radius: 24px; 
+            padding: 25px 15px; text-align: center; box-shadow: 0 6px 0 #000;
+            transition: transform 0.1s;
         }
-        .main-char-sprite { 
-            width: 160px; height: 220px;
-            background-image: url('sprite1.jpg'); background-size: 480px 880px; 
-            image-rendering: pixelated; transform: scale(1.4);
-        }
-        .levels-container {
-            width: 100%; flex-grow: 1; overflow-y: auto; padding: 20px;
-            display: flex; flex-direction: column; align-items: center; gap: 12px;
-            -webkit-overflow-scrolling: touch;
-        }
-        .level-card { 
-            width: 100%; max-width: 380px; border: 2px solid #000; padding: 15px;
-            display: flex; justify-content: space-between; align-items: center;
-            background: #fff; border-radius: 14px; flex-shrink: 0;
-        }
-        .level-card.current { border-width: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        .level-card.locked { opacity: 0.4; background: #fafafa; border-color: #ccc; }
-        .level-info { display: flex; flex-direction: column; }
-        .level-size { font-size: 0.8rem; color: #777; margin-top: 4px; }
+        .hub-item:active { transform: translateY(4px); box-shadow: 0 2px 0 #000; }
+        .hub-item.locked { border-color: #ccc; box-shadow: 0 6px 0 #ccc; color: #aaa; }
 
-        #game-screen { padding: 10px; padding-top: calc(10px + env(safe-area-inset-top)); }
-        .game-header { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .game-container { display: grid; gap: 0px; background: #000; border: 2.5px solid #000; width: 100%; max-width: 450px; margin: auto; }
+        /* Nonogram Styles */
+        .hero-section { width: 100%; height: 35%; display: flex; justify-content: center; align-items: center; background: #fff; border-bottom: 1px solid #eee; flex-shrink: 0; }
+        .main-char-sprite { width: 160px; height: 220px; background-image: url('sprite1.jpg'); background-size: 480px 880px; image-rendering: pixelated; transform: scale(1.1); }
+        .levels-container { width: 100%; flex-grow: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+        .level-card { width: 100%; max-width: 380px; border: 2px solid #000; padding: 15px; display: flex; justify-content: space-between; align-items: center; background: #fff; border-radius: 14px; }
+        .game-container { display: grid; background: #000; border: 2.5px solid #000; width: 95vw; max-width: 450px; margin: auto; }
         .cell { background: #fff; aspect-ratio: 1/1; border: 0.1px solid #ddd; position: relative; }
         .cell.black { background: #000 !important; }
         .cell.x-mark::after { content: "×"; font-size: 1.2rem; color: #bbb; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
-
-        .hint-cell { background-color: var(--hint-bg); font-size: 10px; font-weight: 900; color: #444; border: 0.1px solid #ccc; display: flex; align-items: center; justify-content: center; text-align: center; transition: background-color 0.3s; }
+        .hint-cell { background-color: var(--hint-bg); font-size: 10px; font-weight: 900; border: 0.1px solid #ccc; display: flex; align-items: center; justify-content: center; text-align: center; }
         .hint-cell.solved { background-color: var(--hint-solved) !important; color: #166534; }
-        .thick-border-left { border-left: 2.5px solid #000 !important; }
-        .thick-border-bottom { border-bottom: 2.5px solid #000 !important; }
-
-        .controls-area {
-            width: 100%; display: flex; justify-content: center; gap: 30px;
-            padding-bottom: calc(var(--safe-bottom) + 55px); padding-top: 15px;
-        }
+        
         .mode-btn { width: 70px; height: 70px; border: 2.5px solid #000; background: #fff; font-size: 2rem; border-radius: 18px; display: flex; align-items: center; justify-content: center; }
         .mode-btn.active { background: #000; color: #fff; }
-        .restart-btn { font-size: 1.4rem; background: #eee; border: 1px solid #ccc; width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
 
-        #game-modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:9999; justify-content:center; align-items:center; }
-        .modal-content { background:white; padding:30px; border-radius:25px; text-align:center; width:85%; max-width:320px; border:4px solid #000; }
-        #game-modal.win-modal { background: rgba(0,0,0,0.5); align-items: flex-end; }
-        #game-modal.win-modal .modal-content { width: 100%; max-width: 100%; border-radius: 25px 25px 0 0; padding-bottom: calc(var(--safe-bottom) + 30px); }
+        /* מודאל בתחתית */
+        #game-modal { 
+            display:none; position:fixed; bottom: 0; left:0; width:100%; height:100%; 
+            z-index:10000; justify-content:center; align-items:flex-end; 
+            background: rgba(0,0,0,0.4); 
+        }
+        .modal-content { 
+            background:white; padding:25px; border-radius:25px 25px 0 0; 
+            text-align:center; width:100%; border-top: 5px solid #000;
+            padding-bottom: calc(var(--safe-bottom) + 20px);
+        }
     </style>
 </head>
 <body>
 
     <div id="splash-screen" class="screen active-screen">
         <img src="logo1.png" class="logo-img">
-        <div class="loading-text">טוען את המוח...</div>
+        <h1 style="letter-spacing: 2px; font-weight: 900;">SYNAPSE</h1>
+        <div class="loader-dots">
+            <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+        </div>
+    </div>
+
+    <div id="hub-screen" class="screen">
+        <h1 style="margin: 40px 0 10px;">הספרייה שלי</h1>
+        <div class="hub-grid">
+            <div class="hub-item" onclick="openNonogram()">
+                <div style="font-size: 3rem;">⬛</div>
+                <div style="font-weight: bold; margin-top: 10px;">שחור ופתור</div>
+            </div>
+            <div class="hub-item" onclick="alert('בקרוב: דיגר, סנייק ועוד!')">
+                <div style="font-size: 3rem;">🕹️</div>
+                <div style="font-weight: bold; margin-top: 10px;">רטרו</div>
+            </div>
+        </div>
     </div>
 
     <div id="main-menu" class="screen">
         <div class="hero-section">
             <div id="hero-sprite" class="main-char-sprite" onclick="triggerDevMode()"></div>
         </div>
+        <div style="width: 100%; padding: 15px; display: flex; justify-content: flex-start;">
+            <button onclick="showScreen('hub-screen')" style="background:#000; color:#fff; border:none; padding:10px 25px; border-radius:12px; font-weight: bold;">⬅ חזרה</button>
+        </div>
         <div class="levels-container" id="levels-container"></div>
     </div>
 
     <div id="game-screen" class="screen">
-        <div class="game-header">
-            <button onclick="exitGame()" style="background:none; border:none; font-size: 2.5rem;">✕</button>
-            <div id="level-title-display" style="font-weight:bold;"></div>
-            <button onclick="confirmReset()" class="restart-btn">🔄</button>
+        <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 15px;">
+            <button onclick="exitGame()" style="background:none; border:none; font-size: 2.2rem;">✕</button>
+            <div id="level-title-display" style="font-weight:bold; font-size: 1.2rem;"></div>
+            <button onclick="confirmReset()" style="background:#eee; border:none; width:45px; height:45px; border-radius:50%;">🔄</button>
         </div>
         <div id="game-board" class="game-container"></div>
-        <div id="timer-display" style="margin-top:10px; font-family:monospace; font-size:1.1rem;">00:00</div>
-        <div class="controls-area">
+        <div id="timer-display" style="margin: 15px 0; font-family:monospace; font-size:1.3rem; letter-spacing: 1px;">00:00</div>
+        <div style="display: flex; gap: 30px; padding-bottom: 30px;">
             <button id="btn-paint" class="mode-btn active">⬛</button>
             <button id="btn-x" class="mode-btn">×</button>
         </div>
@@ -112,178 +121,136 @@
 
     <div id="game-modal">
         <div class="modal-content">
-            <h2 id="modal-title"></h2>
-            <p id="modal-message"></p>
-            <div style="display:flex; gap:10px; margin-top:20px;">
-                <button id="modal-confirm-btn" onclick="modalPrimaryAction()" style="flex:1; background:#000; color:#fff; border:none; padding:15px; border-radius:12px; font-weight:bold;">המשך</button>
-                <button id="modal-cancel-btn" onclick="hideModalOnly()" style="display:none; flex:1; background:#eee; border:none; padding:15px; border-radius:12px; color:#555;">ביטול</button>
-            </div>
+            <h2 id="modal-title" style="margin-top:0;"></h2>
+            <p id="modal-message" style="font-size: 1.1rem; color: #444;"></p>
+            <button onclick="modalPrimaryAction()" style="width:100%; background:#000; color:#fff; border:none; padding:18px; border-radius:15px; font-weight:bold; font-size: 1.2rem;">המשך לשלב הבא</button>
         </div>
     </div>
 
-    <script src="levels.js"></script>
-    <script src="engine.js"></script>
+<script src="storage.js"></script>
+<script src="levels.js"></script>
+<script src="engine.js"></script>
     <script>
-        const PROGRESS_KEY = 'nonogram_v1_progress';
-        const STATE_KEY = 'nonogram_v1_current_state';
+        const APP_VERSION = '1.2'; 
+        const STORAGE_KEY = 'synapse_engine_data';
+        const NONOGRAM_ID = 'nonogram-app';
+        const STATE_KEY = 'temp_board_state';
+
         let currentLevelId, currentSolution, currentMode = 'paint', cells = [], isDragging = false;
         let rowHintElements = [], colHintElements = [];
-        let isWinModal = false, pendingReset = false;
         let devClickCount = 0, devModeActive = false;
 
-        function triggerDevMode() {
-            devClickCount++;
-            if (devClickCount === 8) {
-                devModeActive = true;
-                console.log("Dev Mode Active: Click level 2 to unlock all.");
-            }
+        // --- מנוע שמירה אחוד ---
+        function getProgress() {
+            const data = localStorage.getItem(STORAGE_KEY);
+            const parsed = data ? JSON.parse(data) : {};
+            if (!parsed[NONOGRAM_ID]) parsed[NONOGRAM_ID] = { currentLevel: 1, completedIds: [] };
+            return parsed;
         }
 
-        function getProgress() { return JSON.parse(localStorage.getItem(PROGRESS_KEY)) || { completedIds: [] }; }
-        
-        function saveWin(id) {
-            let p = getProgress();
-            if (!p.completedIds.includes(id)) { p.completedIds.push(id); localStorage.setItem(PROGRESS_KEY, JSON.stringify(p)); }
+        function saveWin(levelId) {
+            let allData = getProgress();
+            if (!allData[NONOGRAM_ID].completedIds.includes(levelId)) {
+                allData[NONOGRAM_ID].completedIds.push(levelId);
+                allData[NONOGRAM_ID].currentLevel = Math.max(allData[NONOGRAM_ID].currentLevel, levelId + 1);
+            }
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(allData));
             localStorage.removeItem(STATE_KEY);
         }
 
-        function saveBoardState() {
-            const state = cells.map(row => row.map(c => c.classList.contains('black') ? 1 : (c.classList.contains('x-mark') ? -1 : 0)));
-            localStorage.setItem(STATE_KEY, JSON.stringify({ id: currentLevelId, board: state }));
+        // --- ניווט וגרסה ---
+        function checkUpdates() {
+            const lastVersion = localStorage.getItem('synapse_version');
+            if (lastVersion && lastVersion !== APP_VERSION) {
+                localStorage.setItem('synapse_version', APP_VERSION);
+                location.reload(true);
+            } else { localStorage.setItem('synapse_version', APP_VERSION); }
+        }
+        checkUpdates();
+
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active-screen'));
+            document.getElementById(id).classList.add('active-screen');
         }
 
-        function loadBoardState() {
-            const saved = JSON.parse(localStorage.getItem(STATE_KEY));
-            return (saved && saved.id === currentLevelId) ? saved.board : null;
-        }
-
-        function updateHeroVisual(count) {
-            const sprite = document.getElementById('hero-sprite');
-            const idx = Math.min(Math.floor(count / 5), 11);
-            sprite.style.backgroundPosition = `-${(idx % 3) * 160}px -${Math.floor(idx / 3) * 220}px`;
-        }
-
-        function showWinModal(title, msg) {
-            isWinModal = true; pendingReset = false;
-            document.getElementById('modal-title').innerText = title;
-            document.getElementById('modal-message').innerText = msg;
-            document.getElementById('modal-cancel-btn').style.display = 'none';
-            document.getElementById('game-modal').classList.add('win-modal');
-            document.getElementById('game-modal').style.display = 'flex';
-        }
-
-        function confirmReset() {
-            isWinModal = false; pendingReset = true;
-            document.getElementById('modal-title').innerText = "אתחול שלב";
-            document.getElementById('modal-message').innerText = "האם למחוק את כל ההתקדמות?";
-            document.getElementById('modal-cancel-btn').style.display = 'block';
-            document.getElementById('game-modal').classList.remove('win-modal');
-            document.getElementById('game-modal').style.display = 'flex';
-        }
-
-        function modalPrimaryAction() {
-            if (isWinModal) exitGame();
-            else if (pendingReset) { localStorage.removeItem(STATE_KEY); initBoard(); }
-            hideModalOnly();
-        }
-
-        function hideModalOnly() { document.getElementById('game-modal').style.display = 'none'; }
+        function openNonogram() { showScreen('main-menu'); renderMainMenu(); }
 
         function renderMainMenu() {
             const container = document.getElementById('levels-container');
             container.innerHTML = '';
-            const progress = getProgress();
-            updateHeroVisual(progress.completedIds.length);
-
-            let currentIndex = allLevels.findIndex(l => !progress.completedIds.includes(l.id));
-            if (currentIndex === -1) currentIndex = allLevels.length - 1;
-
-            const showUntil = Math.min(allLevels.length, currentIndex + 2);
+            const progress = getProgress()[NONOGRAM_ID];
             
-            allLevels.slice(0, showUntil).forEach((level, i) => {
-                const unlocked = i <= currentIndex;
+            const sprite = document.getElementById('hero-sprite');
+            const heroIdx = Math.min(Math.floor(progress.completedIds.length / 5), 11);
+            sprite.style.backgroundPosition = `-${(heroIdx % 3) * 160}px -${Math.floor(heroIdx / 3) * 220}px`;
+
+            let currentIdx = allLevels.findIndex(l => !progress.completedIds.includes(l.id));
+            if (currentIdx === -1) currentIdx = allLevels.length - 1;
+
+            allLevels.slice(0, currentIdx + 2).forEach((level, i) => {
+                const unlocked = i <= currentIdx;
                 const solved = progress.completedIds.includes(level.id);
-                const isCurrent = (i === currentIndex);
-                
                 const div = document.createElement('div');
-                div.className = `level-card ${!unlocked ? 'locked' : ''} ${isCurrent ? 'current' : ''}`;
+                div.className = `level-card ${!unlocked ? 'locked' : ''}`;
+                div.innerHTML = `<div><b>${level.id}. ${level.name}</b></div><div>${solved ? '✅' : (unlocked ? '◀' : '🔒')}</div>`;
                 
-                const rows = level.grid ? level.grid.length : (level.height || 5);
-                const cols = level.grid ? level.grid[0].length : (level.width || 5);
-
-                div.innerHTML = `
-                    <div class="level-info">
-                        <div><b>${level.id}. ${level.name}</b></div>
-                        <span class="level-size">${cols}x${rows}</span>
-                    </div>
-                    <div>${solved ? '✅' : (unlocked ? '◀' : '🔒')}</div>
-                `;
-
                 if (unlocked || (devModeActive && i === 1)) {
                     div.onclick = () => {
                         if (devModeActive && i === 1) {
-                            const p = getProgress();
-                            allLevels.forEach(l => { if(!p.completedIds.includes(l.id)) p.completedIds.push(l.id); });
-                            localStorage.setItem(PROGRESS_KEY, JSON.stringify(p));
-                            alert("Developer Mode: Unlocked!");
-                            devModeActive = false; devClickCount = 0;
-                            renderMainMenu(); return;
+                            let p = getProgress();
+                            allLevels.forEach(l => { if(!p[NONOGRAM_ID].completedIds.includes(l.id)) p[NONOGRAM_ID].completedIds.push(l.id); });
+                            localStorage.setItem(STORAGE_KEY, JSON.stringify(p));
+                            devModeActive = false; renderMainMenu(); return;
                         }
                         currentLevelId = level.id;
                         currentSolution = getLevelGrid(level);
                         document.getElementById('level-title-display').innerText = level.name;
-                        showScreen('game-screen'); initBoard();
+                        showScreen('game-screen');
+                        initBoard();
                     };
                 }
                 container.appendChild(div);
             });
         }
 
+        // --- לוגיקת משחק ---
         function initBoard() {
             stopTimer(); elapsedTime = 0;
             const board = document.getElementById('game-board');
             const numRows = currentSolution.length;
             const numCols = currentSolution[0].length;
-            
             board.style.gridTemplateColumns = `55px repeat(${numCols}, 1fr)`;
-            board.innerHTML = ''; 
-            cells = []; rowHintElements = []; colHintElements = [];
+            board.innerHTML = ''; cells = []; rowHintElements = []; colHintElements = [];
             
             const data = generateNonogramData(currentSolution);
-            const savedData = loadBoardState();
+            const saved = JSON.parse(localStorage.getItem(STATE_KEY));
+            const savedData = (saved && saved.id === currentLevelId) ? saved.board : null;
 
-            board.appendChild(Object.assign(document.createElement('div'), {className: 'hint-cell thick-border-bottom thick-border-left'}));
-            
+            board.appendChild(Object.assign(document.createElement('div'), {className: 'hint-cell thick-border-bottom'}));
             data.colHints.forEach((h, i) => {
                 const d = document.createElement('div');
                 d.className = `hint-cell thick-border-bottom ${(i+1)%5===0 ? 'thick-border-left' : ''}`;
                 d.innerHTML = h.join('<br>');
-                board.appendChild(d);
-                colHintElements[i] = d;
+                board.appendChild(d); colHintElements[i] = d;
             });
 
             for (let r = 0; r < numRows; r++) {
                 const rh = document.createElement('div');
                 rh.className = `hint-cell thick-border-left ${(r+1)%5===0 ? 'thick-border-bottom' : ''}`;
                 rh.innerText = data.rowHints[r].join(', ');
-                board.appendChild(rh);
-                rowHintElements[r] = rh;
-                
+                board.appendChild(rh); rowHintElements[r] = rh;
                 cells[r] = [];
                 for (let c = 0; c < numCols; c++) {
                     const cell = document.createElement('div');
                     cell.className = `cell ${(c+1)%5===0 ? 'thick-border-left' : ''} ${(r+1)%5===0 ? 'thick-border-bottom' : ''}`;
-                    if(savedData && savedData[r] && savedData[r][c] === 1) cell.classList.add('black');
-                    if(savedData && savedData[r] && savedData[r][c] === -1) cell.classList.add('x-mark');
-                    
+                    if(savedData && savedData[r][c] === 1) cell.classList.add('black');
+                    if(savedData && savedData[r][c] === -1) cell.classList.add('x-mark');
                     cell.onpointerdown = (e) => { isDragging = true; cell.releasePointerCapture(e.pointerId); handleAction(r, c); };
                     cell.onpointerenter = () => { if (isDragging) handleAction(r, c); };
-                    board.appendChild(cell);
-                    cells[r][c] = cell;
+                    board.appendChild(cell); cells[r][c] = cell;
                 }
             }
-            updateHintColors();
-            startTimer();
+            updateHintColors(); startTimer();
         }
 
         function handleAction(r, c) {
@@ -295,63 +262,46 @@
                 if (cell.classList.contains('black')) cell.classList.remove('black');
                 cell.classList.toggle('x-mark');
             }
-            saveBoardState(); 
-            updateHintColors();
-            checkWinStatus();
+            const state = cells.map(row => row.map(c => c.classList.contains('black') ? 1 : (c.classList.contains('x-mark') ? -1 : 0)));
+            localStorage.setItem(STATE_KEY, JSON.stringify({ id: currentLevelId, board: state }));
+            updateHintColors(); checkWinStatus();
         }
 
         function updateHintColors() {
             const data = generateNonogramData(currentSolution);
-            
-            // בדיקת שורות
             cells.forEach((row, r) => {
                 const rowValues = row.map(c => c.classList.contains('black') ? 1 : 0);
-                const currentHints = getLineHints(rowValues);
-                if (JSON.stringify(currentHints) === JSON.stringify(data.rowHints[r])) {
-                    rowHintElements[r].classList.add('solved');
-                } else {
-                    rowHintElements[r].classList.remove('solved');
-                }
+                const hints = rowValues.join('').split('0').filter(s => s.length > 0).map(s => s.length);
+                const finalHints = hints.length ? hints : [0];
+                rowHintElements[r].classList.toggle('solved', JSON.stringify(finalHints) === JSON.stringify(data.rowHints[r]));
             });
-
-            // בדיקת עמודות
             for (let c = 0; c < currentSolution[0].length; c++) {
                 const colValues = cells.map(r => r[c].classList.contains('black') ? 1 : 0);
-                const currentHints = getLineHints(colValues);
-                if (JSON.stringify(currentHints) === JSON.stringify(data.colHints[c])) {
-                    colHintElements[c].classList.add('solved');
-                } else {
-                    colHintElements[c].classList.remove('solved');
-                }
+                const hints = colValues.join('').split('0').filter(s => s.length > 0).map(s => s.length);
+                const finalHints = hints.length ? hints : [0];
+                colHintElements[c].classList.toggle('solved', JSON.stringify(finalHints) === JSON.stringify(data.colHints[c]));
             }
         }
 
-        function getLineHints(line) {
-            const hints = line.join('').split('0').filter(s => s.length > 0).map(s => s.length);
-            return hints.length ? hints : [0];
-        }
+function checkWinStatus() {
+    if (checkWin(currentSolution, cur)) {
+        stopTimer();
+        // קריאה פשוטה לכספת
+        StorageManager.saveLevelWin('nonogram-app', currentLevelId);
+        showWinModal(); 
+    }
+}
 
-        function checkWinStatus() {
-            const cur = cells.map(r => r.map(c => c.classList.contains('black') ? 1 : 0));
-            if (checkWin(currentSolution, cur)) {
-                stopTimer(); saveWin(currentLevelId);
-                setTimeout(() => showWinModal("פיצחת את המוח!", "האתגר הושלם בהצלחה 🎉"), 400);
-            }
-        }
-
-        function showScreen(id) {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active-screen'));
-            document.getElementById(id).classList.add('active-screen');
-        }
-
+        function modalPrimaryAction() { document.getElementById('game-modal').style.display = 'none'; exitGame(); }
+        function confirmReset() { if(confirm("לאתחל את השלב?")) { localStorage.removeItem(STATE_KEY); initBoard(); } }
         function exitGame() { stopTimer(); showScreen('main-menu'); renderMainMenu(); }
+        function triggerDevMode() { devClickCount++; if (devClickCount === 8) { devModeActive = true; alert("Dev Mode Active"); } }
 
+        window.onload = () => { setTimeout(() => { showScreen('hub-screen'); }, 2500); };
+        window.onpointerup = () => isDragging = false;
         document.getElementById('btn-paint').onclick = () => { currentMode = 'paint'; document.getElementById('btn-paint').classList.add('active'); document.getElementById('btn-x').classList.remove('active'); };
         document.getElementById('btn-x').onclick = () => { currentMode = 'x'; document.getElementById('btn-x').classList.add('active'); document.getElementById('btn-paint').classList.remove('active'); };
-
-        window.onload = () => { setTimeout(() => { showScreen('main-menu'); renderMainMenu(); }, 3000); };
         setInterval(() => { if(document.getElementById('game-screen').classList.contains('active-screen')) document.getElementById('timer-display').innerText = formatTime(elapsedTime); }, 1000);
-        window.onpointerup = () => isDragging = false;
     </script>
 </body>
 </html>
