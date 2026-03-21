@@ -59,18 +59,18 @@
         .mode-btn.active { background: #000; color: #fff; }
 
         /* מודאל בתחתית */
-#game-modal { 
-    display:none; 
-    position:fixed; 
-    bottom: 0; 
-    left:0; 
-    width:100%; 
-    height:100%; 
-    z-index:10000; 
-    justify-content:center; 
-    align-items:flex-end; 
-    background: rgba(0,0,0,0.5); 
-}
+        #game-modal { 
+            display:none; 
+            position:fixed; 
+            bottom: 0; 
+            left:0; 
+            width:100%; 
+            height:100%; 
+            z-index:10000; 
+            justify-content:center; 
+            align-items:flex-end; 
+            background: rgba(0,0,0,0.5); 
+        }
         .modal-content { 
             background:white; padding:25px; border-radius:25px 25px 0 0; 
             text-align:center; width:100%; border-top: 5px solid #000;
@@ -116,7 +116,7 @@
         <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 15px;">
             <button onclick="exitGame()" style="background:none; border:none; font-size: 2.2rem;">✕</button>
             <div id="level-title-display" style="font-weight:bold; font-size: 1.2rem;"></div>
-            <button onclick="confirmReset()" style="background:#eee; border:none; width:45px; height:45px; border-radius:50%;">🔄</button>
+            <button id="reset-btn" style="background:#eee; border:none; width:45px; height:45px; border-radius:50%;">🔄</button>
         </div>
         <div id="game-board" class="game-container"></div>
         <div id="timer-display" style="margin: 15px 0; font-family:monospace; font-size:1.3rem; letter-spacing: 1px;">00:00</div>
@@ -126,49 +126,31 @@
         </div>
     </div>
 
-<div id="game-modal">
-    <div class="modal-content">
-        <h2 id="modal-title"></h2>
-        <p id="modal-message"></p>
-        <div id="modal-buttons" style="display: flex; gap: 10px; flex-direction: column;">
-            <button id="modal-primary-btn" onclick="modalPrimaryAction()" style="width:100%; background:#000; color:#fff; border:none; padding:18px; border-radius:15px; font-weight:bold; font-size: 1.2rem;">המשך</button>
-            <button id="modal-secondary-btn" onclick="closeModal()" style="display:none; width:100%; background:#eee; color:#000; border:none; padding:12px; border-radius:15px; font-weight:bold;">ביטול</button>
+    <div id="game-modal">
+        <div class="modal-content">
+            <h2 id="modal-title"></h2>
+            <p id="modal-message"></p>
+            <div id="modal-buttons" style="display: flex; gap: 10px; flex-direction: column;">
+                <button id="modal-primary-btn" onclick="modalPrimaryAction()" style="width:100%; background:#000; color:#fff; border:none; padding:18px; border-radius:15px; font-weight:bold; font-size: 1.2rem;">המשך</button>
+                <button id="modal-secondary-btn" onclick="closeModal()" style="display:none; width:100%; background:#eee; color:#000; border:none; padding:12px; border-radius:15px; font-weight:bold;">ביטול</button>
+            </div>
         </div>
     </div>
-</div>
 
-<script src="storage.js"></script>
-<script src="levels.js"></script>
-<script src="engine.js"></script>
+    <script src="storage.js?v=1.202"></script>
+    <script src="levels.js?v=1.202"></script>
+    <script src="engine.js?v=1.202"></script>
     <script>
-        const APP_VERSION = '1.201'; 
-        const STORAGE_KEY = 'synapse_engine_data';
-        const NONOGRAM_ID = 'nonogram-app';
+        const APP_VERSION = '1.202'; 
         const STATE_KEY = 'temp_board_state';
+        const GAME_ID = 'nonogram-app';
 
         let currentLevelId, currentSolution, currentMode = 'paint', cells = [], isDragging = false;
         let rowHintElements = [], colHintElements = [];
         let devClickCount = 0, devModeActive = false;
 
-        // --- מנוע שמירה אחוד ---
-        function getProgress() {
-            const data = localStorage.getItem(STORAGE_KEY);
-            const parsed = data ? JSON.parse(data) : {};
-            if (!parsed[NONOGRAM_ID]) parsed[NONOGRAM_ID] = { currentLevel: 1, completedIds: [] };
-            return parsed;
-        }
+        // הסרנו את getProgress ו-saveWin הישנות כדי שלא יתנגשו עם storage.js
 
-        function saveWin(levelId) {
-            let allData = getProgress();
-            if (!allData[NONOGRAM_ID].completedIds.includes(levelId)) {
-                allData[NONOGRAM_ID].completedIds.push(levelId);
-                allData[NONOGRAM_ID].currentLevel = Math.max(allData[NONOGRAM_ID].currentLevel, levelId + 1);
-            }
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(allData));
-            localStorage.removeItem(STATE_KEY);
-        }
-
-        // --- ניווט וגרסה ---
         function checkUpdates() {
             const lastVersion = localStorage.getItem('synapse_version');
             if (lastVersion && lastVersion !== APP_VERSION) {
@@ -183,12 +165,16 @@
             document.getElementById(id).classList.add('active-screen');
         }
 
+        function closeModal() { document.getElementById('game-modal').style.display = 'none'; }
+
         function openNonogram() { showScreen('main-menu'); renderMainMenu(); }
 
         function renderMainMenu() {
             const container = document.getElementById('levels-container');
             container.innerHTML = '';
-            const progress = getProgress()[NONOGRAM_ID];
+            
+            // שימוש ב-StorageManager מהקובץ החיצוני
+            const progress = StorageManager.getGameData(GAME_ID);
             
             const sprite = document.getElementById('hero-sprite');
             const heroIdx = Math.min(Math.floor(progress.completedIds.length / 5), 11);
@@ -206,12 +192,6 @@
                 
                 if (unlocked || (devModeActive && i === 1)) {
                     div.onclick = () => {
-                        if (devModeActive && i === 1) {
-                            let p = getProgress();
-                            allLevels.forEach(l => { if(!p[NONOGRAM_ID].completedIds.includes(l.id)) p[NONOGRAM_ID].completedIds.push(l.id); });
-                            localStorage.setItem(STORAGE_KEY, JSON.stringify(p));
-                            devModeActive = false; renderMainMenu(); return;
-                        }
                         currentLevelId = level.id;
                         currentSolution = getLevelGrid(level);
                         document.getElementById('level-title-display').innerText = level.name;
@@ -223,7 +203,6 @@
             });
         }
 
-        // --- לוגיקת משחק ---
         function initBoard() {
             stopTimer(); elapsedTime = 0;
             const board = document.getElementById('game-board');
@@ -253,8 +232,8 @@
                 for (let c = 0; c < numCols; c++) {
                     const cell = document.createElement('div');
                     cell.className = `cell ${(c+1)%5===0 ? 'thick-border-left' : ''} ${(r+1)%5===0 ? 'thick-border-bottom' : ''}`;
-                    if(savedData && savedData[r][c] === 1) cell.classList.add('black');
-                    if(savedData && savedData[r][c] === -1) cell.classList.add('x-mark');
+                    if(savedData && savedData[r] && savedData[r][c] === 1) cell.classList.add('black');
+                    if(savedData && savedData[r] && savedData[r][c] === -1) cell.classList.add('x-mark');
                     cell.onpointerdown = (e) => { isDragging = true; cell.releasePointerCapture(e.pointerId); handleAction(r, c); };
                     cell.onpointerenter = () => { if (isDragging) handleAction(r, c); };
                     board.appendChild(cell); cells[r][c] = cell;
@@ -293,32 +272,48 @@
             }
         }
 
-function checkWinStatus() {
-    // יצירת המטריצה מהלוח הנוכחי
-    const cur = cells.map(r => r.map(c => c.classList.contains('black') ? 1 : 0));
-    
-    // בדיקה מול הפתרון (הפונקציה checkWin נמצאת ב-engine.js)
-    if (checkWin(currentSolution, cur)) {
-        console.log("Win detected!");
-        stopTimer(); // עוצר את השעון
-        
-        // הצגת המודאל (הודעת הסיום)
-        const modal = document.getElementById('game-modal');
-        document.getElementById('modal-title').innerText = "פיצחת את המוח!";
-        document.getElementById('modal-message').innerText = "שלב " + currentLevelId + " הושלם ב-" + formatTime(elapsedTime);
-        modal.style.display = 'flex';
-        
-        // שמירת ההתקדמות ב"כספת" (storage.js)
-        try {
-            StorageManager.saveLevelWin('nonogram-app', currentLevelId);
-        } catch (e) {
-            console.error("Storage error:", e);
-        }
-    }
-}
+        function checkWinStatus() {
+            const cur = cells.map(r => r.map(c => c.classList.contains('black') ? 1 : 0));
+            if (checkWin(currentSolution, cur)) {
+                stopTimer();
+                
+                // שמירה ב-StorageManager
+                StorageManager.saveLevelWin(GAME_ID, currentLevelId);
+                localStorage.removeItem(STATE_KEY);
 
-        function modalPrimaryAction() { document.getElementById('game-modal').style.display = 'none'; exitGame(); }
-        function confirmReset() { if(confirm("לאתחל את השלב?")) { localStorage.removeItem(STATE_KEY); initBoard(); } }
+                const modal = document.getElementById('game-modal');
+                document.getElementById('modal-title').innerText = "פיצחת את המוח!";
+                document.getElementById('modal-message').innerText = "שלב " + currentLevelId + " הושלם ב-" + formatTime(elapsedTime);
+                
+                const primaryBtn = document.getElementById('modal-primary-btn');
+                primaryBtn.innerText = "המשך לשלב הבא";
+                primaryBtn.onclick = modalPrimaryAction;
+
+                document.getElementById('modal-secondary-btn').style.display = 'none';
+                modal.style.display = 'flex';
+            }
+        }
+
+        function confirmReset() {
+            const modal = document.getElementById('game-modal');
+            const primaryBtn = document.getElementById('modal-primary-btn');
+            const secondaryBtn = document.getElementById('modal-secondary-btn');
+
+            document.getElementById('modal-title').innerText = "איפוס שלב";
+            document.getElementById('modal-message').innerText = "בטוח שרוצים למחוק הכל ולהתחיל מחדש?";
+            
+            primaryBtn.innerText = "כן, אתחל";
+            primaryBtn.onclick = function() {
+                localStorage.removeItem(STATE_KEY);
+                initBoard();
+                closeModal();
+            };
+
+            secondaryBtn.style.display = 'block';
+            modal.style.display = 'flex';
+        }
+
+        function modalPrimaryAction() { closeModal(); exitGame(); }
         function exitGame() { stopTimer(); showScreen('main-menu'); renderMainMenu(); }
         function triggerDevMode() { devClickCount++; if (devClickCount === 8) { devModeActive = true; alert("Dev Mode Active"); } }
 
@@ -326,6 +321,7 @@ function checkWinStatus() {
         window.onpointerup = () => isDragging = false;
         document.getElementById('btn-paint').onclick = () => { currentMode = 'paint'; document.getElementById('btn-paint').classList.add('active'); document.getElementById('btn-x').classList.remove('active'); };
         document.getElementById('btn-x').onclick = () => { currentMode = 'x'; document.getElementById('btn-x').classList.add('active'); document.getElementById('btn-paint').classList.remove('active'); };
+        document.getElementById('reset-btn').onclick = confirmReset;
         setInterval(() => { if(document.getElementById('game-screen').classList.contains('active-screen')) document.getElementById('timer-display').innerText = formatTime(elapsedTime); }, 1000);
     </script>
 </body>
