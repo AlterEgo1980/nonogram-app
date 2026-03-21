@@ -2,92 +2,67 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>Nonogram Pro - Full Sync Editor</title>
+    <title>Nonogram Pro - Drag & Paint Editor</title>
     <style>
         :root { --primary: #2563eb; --bg: #f1f5f9; --panel: #ffffff; --success: #16a34a; --danger: #dc2626; --warning: #f59e0b; }
         body { font-family: system-ui, sans-serif; background: var(--bg); margin: 0; padding: 20px; display: flex; justify-content: center; }
         .container { background: var(--panel); padding: 25px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 1400px; }
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
-        
         .setup-bar { display: flex; gap: 15px; align-items: flex-end; background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 20px; }
         .input-group { display: flex; flex-direction: column; gap: 5px; }
         .input-group label { font-size: 0.85rem; font-weight: bold; color: #475569; }
         input, textarea { border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px; font-family: inherit; }
-        
-        #grid-container { display: grid; gap: 0; margin: 0 auto; border: 2px solid #1e293b; background: #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        #grid-container { display: grid; gap: 0; margin: 0 auto; border: 2px solid #1e293b; background: #fff; user-select: none; }
         .cell { width: 100%; aspect-ratio: 1/1; border: 0.5px solid #cbd5e1; cursor: pointer; position: relative; box-sizing: border-box; }
         .cell.black { background: #1e293b; border-color: #000; }
-        
-        /* Solver Indicators */
         .cell.solved-black::after { content: ''; position: absolute; width: 30%; height: 30%; background: rgba(22, 163, 74, 0.7); border-radius: 50%; top: 35%; left: 35%; }
         .cell.solved-x::after { content: '×'; position: absolute; width: 100%; height: 100%; top:0; left:0; display: flex; align-items: center; justify-content: center; color: rgba(220, 38, 38, 0.4); font-size: 1.2rem; font-weight: bold; }
-
         .editor-area { display: flex; gap: 25px; align-items: flex-start; }
-        .code-side { flex: 1; display: flex; flex-direction: column; gap: 10px; }
-        textarea { height: 400px; font-family: 'Courier New', monospace; font-size: 12px; background: #1e293b; color: #f8fafc; line-height: 1.5; padding: 15px; }
-        
+        textarea { height: 400px; font-family: 'Courier New', monospace; font-size: 11px; background: #1e293b; color: #f8fafc; line-height: 1.4; padding: 15px; width: 100%; box-sizing: border-box; }
         button { padding: 10px 20px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .btn-primary { background: var(--primary); color: white; }
         .btn-success { background: var(--success); color: white; }
         .btn-ghost { background: #64748b; color: white; }
-        button:hover { opacity: 0.9; transform: translateY(-1px); }
-        
         #status { padding: 15px; border-radius: 8px; font-weight: bold; text-align: center; margin-bottom: 15px; display: none; }
-        .status-ok { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
-        .status-warn { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+        .status-ok { background: #dcfce7; color: #166534; }
+        .status-warn { background: #fef3c7; color: #92400e; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="header">
-        <h1 style="margin:0; font-size: 1.5rem;">עורך נונוגרם מקצועי 9.0</h1>
+        <h1 style="margin:0; font-size: 1.5rem;">עורך נונוגרם 10.0 - מצב צביעה</h1>
         <div id="status"></div>
     </div>
 
     <div class="setup-bar">
-        <div class="input-group">
-            <label>ID</label>
-            <input type="number" id="lvl-id" value="21" style="width: 60px;" oninput="syncToCode()">
-        </div>
-        <div class="input-group">
-            <label>שם השלב</label>
-            <input type="text" id="lvl-name" value="אובייקט חדש" oninput="syncToCode()">
-        </div>
-        <div class="input-group">
-            <label>רוחב (W)</label>
-            <input type="number" id="grid-w" value="15" style="width: 60px;" onchange="initGrid()">
-        </div>
-        <div class="input-group">
-            <label>גובה (H)</label>
-            <input type="number" id="grid-h" value="15" style="width: 60px;" onchange="initGrid()">
-        </div>
-        <button class="btn-success" onclick="runLogicalSolver()">בדוק פתירות לוגית</button>
+        <div class="input-group"><label>ID</label><input type="number" id="lvl-id" value="21" style="width: 50px;" oninput="syncToCode()"></div>
+        <div class="input-group"><label>שם</label><input type="text" id="lvl-name" value="אובייקט חדש" oninput="syncToCode()"></div>
+        <div class="input-group"><label>W</label><input type="number" id="grid-w" value="15" style="width: 50px;" onchange="initGrid()"></div>
+        <div class="input-group"><label>H</label><input type="number" id="grid-h" value="15" style="width: 50px;" onchange="initGrid()"></div>
+        <button class="btn-success" onclick="runLogicalSolver()">בדוק פתירות</button>
         <button class="btn-ghost" onclick="initGrid()">איפוס</button>
     </div>
 
     <div class="editor-area">
         <div style="flex: 1.5;">
             <div id="grid-container"></div>
-            <p style="color: #64748b; font-size: 0.85rem; margin-top: 15px;">
-                💡 <b>טיפ:</b> ניתן להדביק תמונה (Ctrl+V) כדי להמיר אותה אוטומטית לגריד.
-            </p>
+            <p style="color: #64748b; font-size: 0.85rem; margin-top: 10px;">לחץ וגרור כדי לצבוע | Ctrl+V להדבקת תמונה</p>
         </div>
-
-        <div class="code-side">
-            <label style="font-weight: bold;">קוד ייצור (JSON):</label>
+        <div style="flex: 1;">
             <textarea id="code-output" spellcheck="false"></textarea>
-            <div style="display: flex; gap: 10px;">
-                <button class="btn-ghost" style="flex:1" onclick="importFromCode()">ייבא קוד לגריד ↑</button>
-                <button class="btn-primary" style="flex:1" onclick="copyCode()">העתק קוד מוכן</button>
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button class="btn-ghost" style="flex:1" onclick="importFromCode()">ייבא קוד ↑</button>
+                <button class="btn-primary" style="flex:1" onclick="copyCode()">העתק קוד</button>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    let grid = [];
-    let w = 15, h = 15;
+    let grid = [], w = 15, h = 15;
+    let isDragging = false, dragType = 1;
 
     function initGrid() {
         w = parseInt(document.getElementById('grid-w').value);
@@ -99,7 +74,7 @@
     function renderGrid() {
         const container = document.getElementById('grid-container');
         container.style.gridTemplateColumns = `repeat(${w}, 1fr)`;
-        container.style.width = (w * 30 > 600) ? '600px' : (w * 30) + 'px';
+        container.style.width = (w * 25 > 600) ? '600px' : (w * 25) + 'px';
         container.innerHTML = '';
 
         for (let r = 0; r < h; r++) {
@@ -107,18 +82,39 @@
                 const cell = document.createElement('div');
                 cell.className = 'cell' + (grid[r][c] ? ' black' : '');
                 cell.id = `cell-${r}-${c}`;
-                cell.onclick = () => toggleCell(r, c);
+                
+                cell.onmousedown = (e) => {
+                    e.preventDefault();
+                    isDragging = true;
+                    dragType = grid[r][c] ? 0 : 1;
+                    toggleCell(r, c, dragType);
+                };
+                
+                cell.onmouseenter = () => {
+                    if (isDragging) toggleCell(r, c, dragType);
+                };
+
                 container.appendChild(cell);
             }
         }
         syncToCode();
     }
 
-    function toggleCell(r, c) {
-        grid[r][c] = grid[r][c] ? 0 : 1;
-        document.getElementById(`cell-${r}-${c}`).classList.toggle('black');
+    window.onmouseup = () => { isDragging = false; };
+
+    function toggleCell(r, c, type) {
+        grid[r][c] = type;
+        const cell = document.getElementById(`cell-${r}-${c}`);
+        if (type) cell.classList.add('black'); else cell.classList.remove('black');
         clearSolverMarks();
         syncToCode();
+    }
+
+    function syncToCode() {
+        const id = document.getElementById('lvl-id').value;
+        const name = document.getElementById('lvl-name').value;
+        let gridLines = grid.map(row => `        [${row.join(',')}]`).join(',\n');
+        document.getElementById('code-output').value = `{\n    id: ${id},\n    name: "${name}",\n    width: ${w},\n    height: ${h},\n    grid: [\n${gridLines}\n    ]\n},`;
     }
 
     function clearSolverMarks() {
@@ -126,49 +122,19 @@
         document.getElementById('status').style.display = 'none';
     }
 
-    function syncToCode() {
-        const id = document.getElementById('lvl-id').value;
-        const name = document.getElementById('lvl-name').value;
-        let gridLines = grid.map(row => `        [${row.join(',')}]`).join(',\n');
-        
-        const code = `{
-    id: ${id},
-    name: "${name}",
-    width: ${w},
-    height: ${h},
-    grid: [
-${gridLines}
-    ]
-},`;
-        document.getElementById('code-output').value = code;
-    }
-
     function importFromCode() {
         try {
             const raw = document.getElementById('code-output').value.trim();
-            const clean = raw.endsWith(',') ? raw.slice(0, -1) : raw;
-            const obj = eval(`(${clean})`);
-            
-            if (obj.grid) {
-                grid = obj.grid;
-                h = grid.length;
-                w = grid[0].length;
-            } else if (obj.data) {
-                const size = obj.size || Math.sqrt(obj.data.length);
-                w = size; h = size;
-                grid = [];
-                for(let i=0; i<h; i++) grid.push(obj.data.slice(i*w, (i+1)*w).split('').map(Number));
-            }
-            
+            const obj = eval(`(${raw.endsWith(',') ? raw.slice(0, -1) : raw})`);
+            if (obj.grid) { grid = obj.grid; h = grid.length; w = grid[0].length; }
             document.getElementById('lvl-id').value = obj.id || 0;
             document.getElementById('lvl-name').value = obj.name || "";
             document.getElementById('grid-w').value = w;
             document.getElementById('grid-h').value = h;
             renderGrid();
-        } catch(e) { alert("שגיאה בייבוא הקוד. וודא פורמט תקין."); }
+        } catch(e) { alert("שגיאה בייבוא"); }
     }
 
-    // --- Logical Solver Engine ---
     function getClues(line) {
         const clues = line.join('').split('0').filter(s => s.length > 0).map(s => s.length);
         return clues.length ? clues : [0];
@@ -192,88 +158,59 @@ ${gridLines}
                 if (combined.every((v, i) => current[i] === null || current[i] === v)) backtrack(combined.length, clueIdx + 1, combined);
             }
         }
-        if (clues[0] === 0) possibilities.push(Array(len).fill(0));
-        else backtrack(0, 0, []);
-        
+        if (clues[0] === 0) possibilities.push(Array(len).fill(0)); else backtrack(0, 0, []);
         if (possibilities.length === 0) return null;
-        const result = Array(len).fill(null);
+        const res = Array(len).fill(null);
         for (let i = 0; i < len; i++) {
-            const first = possibilities[0][i];
-            if (possibilities.every(p => p[i] === first)) result[i] = first;
+            const f = possibilities[0][i];
+            if (possibilities.every(p => p[i] === f)) res[i] = f;
         }
-        return result;
+        return res;
     }
 
     function runLogicalSolver() {
         clearSolverMarks();
-        const rowClues = grid.map(r => getClues(r));
-        const colClues = Array.from({length: w}, (_, i) => getClues(grid.map(r => r[i])));
-        let solvedGrid = Array(h).fill().map(() => Array(w).fill(null));
-        let changed = true, limit = 0;
-
-        while (changed && limit < 40) {
-            changed = false; limit++;
-            rowClues.forEach((clue, r) => {
-                const res = solveLine(clue, solvedGrid[r]);
-                if (res) res.forEach((v, c) => { if (v !== null && solvedGrid[r][c] === null) { solvedGrid[r][c] = v; changed = true; }});
+        const rClues = grid.map(r => getClues(r)), cClues = Array.from({length: w}, (_, i) => getClues(grid.map(r => r[i])));
+        let sGrid = Array(h).fill().map(() => Array(w).fill(null)), changed = true, lim = 0;
+        while (changed && lim < 40) {
+            changed = false; lim++;
+            rClues.forEach((clue, r) => {
+                const res = solveLine(clue, sGrid[r]);
+                if (res) res.forEach((v, c) => { if (v !== null && sGrid[r][c] === null) { sGrid[r][c] = v; changed = true; }});
             });
-            colClues.forEach((clue, c) => {
-                const col = solvedGrid.map(r => r[c]);
-                const res = solveLine(clue, col);
-                if (res) res.forEach((v, r) => { if (v !== null && solvedGrid[r][c] === null) { solvedGrid[r][c] = v; changed = true; }});
+            cClues.forEach((clue, c) => {
+                const res = solveLine(clue, sGrid.map(r => r[c]));
+                if (res) res.forEach((v, r) => { if (v !== null && sGrid[r][c] === null) { sGrid[r][c] = v; changed = true; }});
             });
         }
-
-        let count = 0;
-        solvedGrid.forEach((row, r) => row.forEach((v, c) => {
-            if (v !== null) count++;
+        let solved = 0;
+        sGrid.forEach((row, r) => row.forEach((v, c) => {
+            if (v !== null) solved++;
             if (grid[r][c] === 0) {
                 if (v === 1) document.getElementById(`cell-${r}-${c}`).classList.add('solved-black');
                 if (v === 0) document.getElementById(`cell-${r}-${c}`).classList.add('solved-x');
             }
         }));
-
-        const status = document.getElementById('status');
-        status.style.display = 'block';
-        const percent = Math.round((count / (w * h)) * 100);
-        if (percent === 100) {
-            status.className = 'status-ok';
-            status.innerText = "✅ שלב מושלם! ניתן לפתרון לוגי מלא ללא ניחושים.";
-        } else {
-            status.className = 'status-warn';
-            status.innerText = `⚠️ זהירות: השלב דורש ניחוש. רק ${percent}% מהתאים ניתנים לפיצוח לוגי.`;
-        }
+        const stat = document.getElementById('status'); stat.style.display = 'block';
+        const p = Math.round((solved/(w*h))*100);
+        stat.className = p === 100 ? 'status-ok' : 'status-warn';
+        stat.innerText = p === 100 ? "✅ פתיר לוגית ב-100%!" : `⚠️ מחייב ניחוש: רק ${p}% וודאי.`;
     }
 
-    function copyCode() {
-        const el = document.getElementById('code-output');
-        el.select();
-        document.execCommand('copy');
-        alert("הקוד הועתק!");
-    }
+    function copyCode() { document.getElementById('code-output').select(); document.execCommand('copy'); alert("הועתק!"); }
 
-    // Paste Image Support
     window.addEventListener('paste', e => {
         const item = Array.from(e.clipboardData.items).find(x => x.type.indexOf('image') !== -1);
         if (!item) return;
-        const reader = new FileReader();
-        reader.onload = ev => {
-            const img = new Image();
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                canvas.width = w; canvas.height = h;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, w, h);
-                const data = ctx.getImageData(0, 0, w, h).data;
-                for (let i = 0; i < data.length; i += 4) {
-                    const avg = (data[i] + data[i+1] + data[i+2]) / 3;
-                    grid[Math.floor((i/4)/w)][(i/4)%w] = avg < 128 ? 1 : 0;
-                }
+        const r = new FileReader(); r.onload = ev => {
+            const img = new Image(); img.onload = () => {
+                const cvs = document.createElement('canvas'); cvs.width = w; cvs.height = h;
+                const ctx = cvs.getContext('2d'); ctx.drawImage(img, 0, 0, w, h);
+                const d = ctx.getImageData(0, 0, w, h).data;
+                for (let i = 0; i < d.length; i += 4) grid[Math.floor((i/4)/w)][(i/4)%w] = ((d[i]+d[i+1]+d[i+2])/3) < 128 ? 1 : 0;
                 renderGrid();
-            };
-            img.src = ev.target.result;
-        };
-        reader.readAsDataURL(item.getAsFile());
+            }; img.src = ev.target.result;
+        }; r.readAsDataURL(item.getAsFile());
     });
 
     initGrid();

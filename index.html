@@ -135,6 +135,8 @@ body {
     <script src="levels.js"></script>
     <script src="engine.js"></script>
     <script>
+
+
         const PROGRESS_KEY = 'nonogram_v1_progress';
         const STATE_KEY = 'nonogram_v1_current_state';
         let currentLevelId, currentSolution, currentMode = 'paint', cells = [], isDragging = false;
@@ -244,13 +246,19 @@ body {
             }
         }
 
-        function initBoard() {
-            const board = document.getElementById('game-board');
-            const size = currentSolution.length;
-            board.style.gridTemplateColumns = `55px repeat(${size}, 1fr)`;
-            board.innerHTML = ''; cells = [];
-            const data = generateNonogramData(currentSolution);
-            const savedData = loadBoardState();
+function initBoard() {
+    const board = document.getElementById('game-board');
+    // שימוש בנתונים האמיתיים של המטריצה ולא רק ב-size כללי
+    const numRows = currentSolution.length;
+    const numCols = currentSolution[0].length;
+    
+    // הגדרת העמודות: עמודה אחת לרמזים (55px) והשאר לפי כמות העמודות בחידה
+    board.style.gridTemplateColumns = `55px repeat(${numCols}, 1fr)`;
+    board.innerHTML = ''; 
+    cells = [];
+    
+    const data = generateNonogramData(currentSolution);
+    const savedData = loadBoardState();
 
             board.appendChild(Object.assign(document.createElement('div'), {className: 'hint-cell thick-border-bottom thick-border-left'}));
             data.colHints.forEach((h, i) => {
@@ -260,25 +268,31 @@ body {
                 board.appendChild(d);
             });
 
-            for (let r = 0; r < size; r++) {
-                const rh = document.createElement('div');
-                rh.className = `hint-cell thick-border-left ${(r+1)%5===0 ? 'thick-border-bottom' : ''}`;
-                rh.innerText = data.rowHints[r].join(', ');
-                board.appendChild(rh);
-                cells[r] = [];
-                for (let c = 0; c < size; c++) {
-                    const cell = document.createElement('div');
-                    cell.className = `cell ${(c+1)%5===0 ? 'thick-border-left' : ''} ${(r+1)%5===0 ? 'thick-border-bottom' : ''}`;
-                    if(savedData) {
-                        if(savedData[r][c] === 1) cell.classList.add('black');
-                        if(savedData[r][c] === -1) cell.classList.add('x-mark');
-                    }
-                    cell.onpointerdown = (e) => { isDragging = true; cell.releasePointerCapture(e.pointerId); handleAction(r, c); };
-                    cell.onpointerenter = () => { if (isDragging) handleAction(r, c); };
-                    board.appendChild(cell);
-                    cells[r][c] = cell;
-                }
+// יצירת התאים
+    for (let r = 0; r < numRows; r++) {
+        const rh = document.createElement('div');
+        // הוספת קו עבה כל 5 שורות
+        rh.className = `hint-cell thick-border-left ${(r + 1) % 5 === 0 ? 'thick-border-bottom' : ''}`;
+        rh.innerText = data.rowHints[r].join(', ');
+        board.appendChild(rh);
+        
+        cells[r] = [];
+        for (let c = 0; c < numCols; c++) {
+            const cell = document.createElement('div');
+            // הוספת קו עבה כל 5 עמודות
+            cell.className = `cell ${(c + 1) % 5 === 0 ? 'thick-border-left' : ''} ${(r + 1) % 5 === 0 ? 'thick-border-bottom' : ''}`;
+            
+            if(savedData && savedData[r]) {
+                if(savedData[r][c] === 1) cell.classList.add('black');
+                if(savedData[r][c] === -1) cell.classList.add('x-mark');
             }
+            
+            cell.onpointerdown = (e) => { isDragging = true; cell.releasePointerCapture(e.pointerId); handleAction(r, c); };
+            cell.onpointerenter = () => { if (isDragging) handleAction(r, c); };
+            board.appendChild(cell);
+            cells[r][c] = cell;
+        }
+    }
             updateHintsUI(); startTimer();
         }
 
