@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>My Mind - פלטפורמת משחקים</title>
+    <title>Synapse - Mind Training</title>
     <link rel="manifest" href="manifest.json">
     <style>
         :root { 
@@ -25,14 +25,23 @@
 
         /* Splash Screen */
         #splash-screen { justify-content: center; background: #fff; }
-        .logo-img { width: 120px; margin-bottom: 25px; }
+        .logo-img { width: 140px; margin-bottom: 25px; border-radius: 20%; }
+        .loader-dots { display: flex; gap: 8px; margin-top: 20px; }
+        .dot { width: 10px; height: 10px; background: #000; border-radius: 50%; animation: bounce 0.5s infinite alternate; }
+        .dot:nth-child(2) { animation-delay: 0.2s; }
+        .dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-10px); } }
 
         /* HUB Screen */
-        #hub-screen { background: #f9f9f9; padding-top: 50px; }
-        .hub-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 20px; width: 100%; max-width: 500px; }
-        .hub-item { background: #fff; border: 3px solid #000; border-radius: 20px; padding: 20px; text-align: center; box-shadow: 0 4px 0 #000; }
-        .hub-item:active { transform: translateY(2px); box-shadow: 0 2px 0 #000; }
-        .hub-item.locked { border-color: #ccc; box-shadow: 0 4px 0 #ccc; color: #aaa; }
+        #hub-screen { background: #f9f9f9; padding-top: 60px; }
+        .hub-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 25px; width: 100%; max-width: 500px; }
+        .hub-item { 
+            background: #fff; border: 3px solid #000; border-radius: 24px; 
+            padding: 25px 15px; text-align: center; box-shadow: 0 6px 0 #000;
+            transition: transform 0.1s;
+        }
+        .hub-item:active { transform: translateY(4px); box-shadow: 0 2px 0 #000; }
+        .hub-item.locked { border-color: #ccc; box-shadow: 0 6px 0 #ccc; color: #aaa; }
 
         /* Nonogram Styles */
         .hero-section { width: 100%; height: 35%; display: flex; justify-content: center; align-items: center; background: #fff; border-bottom: 1px solid #eee; flex-shrink: 0; }
@@ -45,43 +54,50 @@
         .cell.x-mark::after { content: "×"; font-size: 1.2rem; color: #bbb; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
         .hint-cell { background-color: var(--hint-bg); font-size: 10px; font-weight: 900; border: 0.1px solid #ccc; display: flex; align-items: center; justify-content: center; text-align: center; }
         .hint-cell.solved { background-color: var(--hint-solved) !important; color: #166534; }
-        .thick-border-left { border-left: 2.5px solid #000 !important; }
-        .thick-border-bottom { border-bottom: 2.5px solid #000 !important; }
         
-        .mode-btn { width: 70px; height: 70px; border: 2.5px solid #000; background: #fff; font-size: 2rem; border-radius: 18px; }
+        .mode-btn { width: 70px; height: 70px; border: 2.5px solid #000; background: #fff; font-size: 2rem; border-radius: 18px; display: flex; align-items: center; justify-content: center; }
         .mode-btn.active { background: #000; color: #fff; }
-#game-modal { 
-    display:none; 
-    position:fixed; 
-    top:0; 
-    left:0; 
-    width:100%; 
-    height:100%; 
-    z-index:10000; /* זה יוודא שההודעה תקפוץ מעל הכל */
-    justify-content:center; 
-    align-items:center; 
-    background: rgba(0,0,0,0.7); /* רקע כהה שקוף */
-}
-        .modal-content { background:white; padding:30px; border-radius:25px; text-align:center; width:85%; max-width:320px; border:4px solid #000; }
+
+        /* מודאל בתחתית */
+        #game-modal { 
+            display:none; 
+            position:fixed; 
+            bottom: 0; 
+            left:0; 
+            width:100%; 
+            height:100%; 
+            z-index:10000; 
+            justify-content:center; 
+            align-items:flex-end; 
+            background: rgba(0,0,0,0.5); 
+        }
+        .modal-content { 
+            background:white; padding:25px; border-radius:25px 25px 0 0; 
+            text-align:center; width:100%; border-top: 5px solid #000;
+            padding-bottom: calc(var(--safe-bottom) + 20px);
+        }
     </style>
 </head>
 <body>
 
     <div id="splash-screen" class="screen active-screen">
         <img src="logo1.png" class="logo-img">
-        <div style="font-size: 1.2rem;">טוען את המוח...</div>
+        <h1 style="letter-spacing: 2px; font-weight: 900;">SYNAPSE</h1>
+        <div class="loader-dots">
+            <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+        </div>
     </div>
 
     <div id="hub-screen" class="screen">
-        <h1 style="margin: 40px 0 20px;">הספרייה שלי</h1>
+        <h1 style="margin: 40px 0 10px;">הספרייה שלי</h1>
         <div class="hub-grid">
             <div class="hub-item" onclick="openNonogram()">
                 <div style="font-size: 3rem;">⬛</div>
-                <div style="font-weight: bold; margin-top: 10px;">נונוגרם</div>
+                <div style="font-weight: bold; margin-top: 10px;">שחור ופתור</div>
             </div>
-            <div class="hub-item locked">
-                <div style="font-size: 3rem;">🃏</div>
-                <div style="font-weight: bold; margin-top: 10px;">זיכרון</div>
+            <div class="hub-item" onclick="alert('בקרוב: דיגר, סנייק ועוד!')">
+                <div style="font-size: 3rem;">🕹️</div>
+                <div style="font-weight: bold; margin-top: 10px;">רטרו</div>
             </div>
         </div>
     </div>
@@ -90,22 +106,21 @@
         <div class="hero-section">
             <div id="hero-sprite" class="main-char-sprite" onclick="triggerDevMode()"></div>
         </div>
-        <div style="width: 100%; padding: 15px; display: flex; justify-content: space-between; align-items: center;">
-            <button onclick="showScreen('hub-screen')" style="background:none; border:none; font-size: 1.2rem; font-weight: bold;">⬅ חזרה</button>
-            <h2 style="margin:0;">שלבי נונוגרם</h2>
+        <div style="width: 100%; padding: 15px; display: flex; justify-content: flex-start;">
+            <button onclick="showScreen('hub-screen')" style="background:#000; color:#fff; border:none; padding:10px 25px; border-radius:12px; font-weight: bold;">⬅ חזרה</button>
         </div>
         <div class="levels-container" id="levels-container"></div>
     </div>
 
     <div id="game-screen" class="screen">
         <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 15px;">
-            <button onclick="exitGame()" style="background:none; border:none; font-size: 2rem;">✕</button>
-            <div id="level-title-display" style="font-weight:bold;"></div>
-            <button onclick="confirmReset()" style="background:#eee; border:none; width:40px; height:40px; border-radius:50%;">🔄</button>
+            <button onclick="exitGame()" style="background:none; border:none; font-size: 2.2rem;">✕</button>
+            <div id="level-title-display" style="font-weight:bold; font-size: 1.2rem;"></div>
+            <button id="reset-btn" style="background:#eee; border:none; width:45px; height:45px; border-radius:50%;">🔄</button>
         </div>
         <div id="game-board" class="game-container"></div>
-        <div id="timer-display" style="margin: 10px 0; font-family:monospace; font-size:1.2rem;">00:00</div>
-        <div style="display: flex; gap: 20px; padding-bottom: 40px;">
+        <div id="timer-display" style="margin: 15px 0; font-family:monospace; font-size:1.3rem; letter-spacing: 1px;">00:00</div>
+        <div style="display: flex; gap: 30px; padding-bottom: 30px;">
             <button id="btn-paint" class="mode-btn active">⬛</button>
             <button id="btn-x" class="mode-btn">×</button>
         </div>
@@ -115,26 +130,33 @@
         <div class="modal-content">
             <h2 id="modal-title"></h2>
             <p id="modal-message"></p>
-            <button onclick="modalPrimaryAction()" style="width:100%; background:#000; color:#fff; border:none; padding:15px; border-radius:12px; font-weight:bold; margin-top:15px;">המשך</button>
+            <div id="modal-buttons" style="display: flex; gap: 10px; flex-direction: column;">
+                <button id="modal-primary-btn" onclick="modalPrimaryAction()" style="width:100%; background:#000; color:#fff; border:none; padding:18px; border-radius:15px; font-weight:bold; font-size: 1.2rem;">המשך</button>
+                <button id="modal-secondary-btn" onclick="closeModal()" style="display:none; width:100%; background:#eee; color:#000; border:none; padding:12px; border-radius:15px; font-weight:bold;">ביטול</button>
+            </div>
         </div>
     </div>
 
-    <script src="levels.js"></script>
-    <script src="engine.js"></script>
+    <script src="storage.js?v=1.202"></script>
+    <script src="levels.js?v=1.202"></script>
+    <script src="engine.js?v=1.202"></script>
     <script>
-        const APP_VERSION = '1.1'; 
-        const PROGRESS_KEY = 'nonogram_v1_progress';
-        const STATE_KEY = 'nonogram_v1_current_state';
+        const APP_VERSION = '1.202'; 
+        const STATE_KEY = 'temp_board_state';
+        const GAME_ID = 'nonogram-app';
+
         let currentLevelId, currentSolution, currentMode = 'paint', cells = [], isDragging = false;
         let rowHintElements = [], colHintElements = [];
         let devClickCount = 0, devModeActive = false;
 
+        // הסרנו את getProgress ו-saveWin הישנות כדי שלא יתנגשו עם storage.js
+
         function checkUpdates() {
-            const lastVersion = localStorage.getItem('app_version');
+            const lastVersion = localStorage.getItem('synapse_version');
             if (lastVersion && lastVersion !== APP_VERSION) {
-                localStorage.setItem('app_version', APP_VERSION);
+                localStorage.setItem('synapse_version', APP_VERSION);
                 location.reload(true);
-            } else { localStorage.setItem('app_version', APP_VERSION); }
+            } else { localStorage.setItem('synapse_version', APP_VERSION); }
         }
         checkUpdates();
 
@@ -143,29 +165,26 @@
             document.getElementById(id).classList.add('active-screen');
         }
 
+        function closeModal() { document.getElementById('game-modal').style.display = 'none'; }
+
         function openNonogram() { showScreen('main-menu'); renderMainMenu(); }
-
-        function triggerDevMode() {
-            devClickCount++;
-            if (devClickCount === 8) { devModeActive = true; alert("Dev Mode: Click Level 2 (Turtle) to unlock all."); }
-        }
-
-        function getProgress() { return JSON.parse(localStorage.getItem(PROGRESS_KEY)) || { completedIds: [] }; }
 
         function renderMainMenu() {
             const container = document.getElementById('levels-container');
             container.innerHTML = '';
-            const progress = getProgress();
+            
+            // שימוש ב-StorageManager מהקובץ החיצוני
+            const progress = StorageManager.getGameData(GAME_ID);
             
             const sprite = document.getElementById('hero-sprite');
             const heroIdx = Math.min(Math.floor(progress.completedIds.length / 5), 11);
             sprite.style.backgroundPosition = `-${(heroIdx % 3) * 160}px -${Math.floor(heroIdx / 3) * 220}px`;
 
-            let currentIndex = allLevels.findIndex(l => !progress.completedIds.includes(l.id));
-            if (currentIndex === -1) currentIndex = allLevels.length - 1;
+            let currentIdx = allLevels.findIndex(l => !progress.completedIds.includes(l.id));
+            if (currentIdx === -1) currentIdx = allLevels.length - 1;
 
-            allLevels.slice(0, currentIndex + 2).forEach((level, i) => {
-                const unlocked = i <= currentIndex;
+            allLevels.slice(0, currentIdx + 2).forEach((level, i) => {
+                const unlocked = i <= currentIdx;
                 const solved = progress.completedIds.includes(level.id);
                 const div = document.createElement('div');
                 div.className = `level-card ${!unlocked ? 'locked' : ''}`;
@@ -173,12 +192,6 @@
                 
                 if (unlocked || (devModeActive && i === 1)) {
                     div.onclick = () => {
-                        if (devModeActive && i === 1) {
-                            const p = getProgress();
-                            allLevels.forEach(l => { if(!p.completedIds.includes(l.id)) p.completedIds.push(l.id); });
-                            localStorage.setItem(PROGRESS_KEY, JSON.stringify(p));
-                            devModeActive = false; renderMainMenu(); return;
-                        }
                         currentLevelId = level.id;
                         currentSolution = getLevelGrid(level);
                         document.getElementById('level-title-display').innerText = level.name;
@@ -190,67 +203,44 @@
             });
         }
 
-function initBoard() {
-    stopTimer(); 
-    elapsedTime = 0;
-    const board = document.getElementById('game-board');
-    if (!currentSolution) return; // הגנה למקרה שהשלב לא נטען
-
-    const numRows = currentSolution.length;
-    const numCols = currentSolution[0].length;
-    
-    // הגדרת הגריד לפי מידות השלב
-    board.style.gridTemplateColumns = `55px repeat(${numCols}, 1fr)`;
-    board.innerHTML = ''; 
-    cells = []; rowHintElements = []; colHintElements = [];
-    
-    const data = generateNonogramData(currentSolution);
-    // טעינת מצב שמור רק אם זה אותו שלב
-    const saved = JSON.parse(localStorage.getItem(STATE_KEY));
-    const savedData = (saved && saved.id === currentLevelId) ? saved.board : null;
-
-    // פינה ריקה
-    board.appendChild(Object.assign(document.createElement('div'), {className: 'hint-cell thick-border-bottom thick-border-left'}));
-    
-    // רמזי עמודות
-    data.colHints.forEach((h, i) => {
-        const d = document.createElement('div');
-        d.className = `hint-cell thick-border-bottom ${(i+1)%5===0 ? 'thick-border-left' : ''}`;
-        d.innerHTML = h.join('<br>');
-        board.appendChild(d);
-        colHintElements[i] = d;
-    });
-
-    // יצירת שורות ותאים
-    for (let r = 0; r < numRows; r++) {
-        const rh = document.createElement('div');
-        rh.className = `hint-cell thick-border-left ${(r+1)%5===0 ? 'thick-border-bottom' : ''}`;
-        rh.innerText = data.rowHints[r].join(', ');
-        board.appendChild(rh);
-        rowHintElements[r] = rh;
-        
-        cells[r] = [];
-        for (let c = 0; c < numCols; c++) {
-            const cell = document.createElement('div');
-            cell.className = `cell ${(c+1)%5===0 ? 'thick-border-left' : ''} ${(r+1)%5===0 ? 'thick-border-bottom' : ''}`;
+        function initBoard() {
+            stopTimer(); elapsedTime = 0;
+            const board = document.getElementById('game-board');
+            const numRows = currentSolution.length;
+            const numCols = currentSolution[0].length;
+            board.style.gridTemplateColumns = `55px repeat(${numCols}, 1fr)`;
+            board.innerHTML = ''; cells = []; rowHintElements = []; colHintElements = [];
             
-            // שחזור מצב שמור
-            if(savedData && savedData[r] && savedData[r][c] === 1) cell.classList.add('black');
-            if(savedData && savedData[r] && savedData[r][c] === -1) cell.classList.add('x-mark');
-            
-            cell.onpointerdown = (e) => { 
-                isDragging = true; 
-                cell.releasePointerCapture(e.pointerId); 
-                handleAction(r, c); 
-            };
-            cell.onpointerenter = () => { if (isDragging) handleAction(r, c); };
-            board.appendChild(cell);
-            cells[r][c] = cell;
+            const data = generateNonogramData(currentSolution);
+            const saved = JSON.parse(localStorage.getItem(STATE_KEY));
+            const savedData = (saved && saved.id === currentLevelId) ? saved.board : null;
+
+            board.appendChild(Object.assign(document.createElement('div'), {className: 'hint-cell thick-border-bottom'}));
+            data.colHints.forEach((h, i) => {
+                const d = document.createElement('div');
+                d.className = `hint-cell thick-border-bottom ${(i+1)%5===0 ? 'thick-border-left' : ''}`;
+                d.innerHTML = h.join('<br>');
+                board.appendChild(d); colHintElements[i] = d;
+            });
+
+            for (let r = 0; r < numRows; r++) {
+                const rh = document.createElement('div');
+                rh.className = `hint-cell thick-border-left ${(r+1)%5===0 ? 'thick-border-bottom' : ''}`;
+                rh.innerText = data.rowHints[r].join(', ');
+                board.appendChild(rh); rowHintElements[r] = rh;
+                cells[r] = [];
+                for (let c = 0; c < numCols; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = `cell ${(c+1)%5===0 ? 'thick-border-left' : ''} ${(r+1)%5===0 ? 'thick-border-bottom' : ''}`;
+                    if(savedData && savedData[r] && savedData[r][c] === 1) cell.classList.add('black');
+                    if(savedData && savedData[r] && savedData[r][c] === -1) cell.classList.add('x-mark');
+                    cell.onpointerdown = (e) => { isDragging = true; cell.releasePointerCapture(e.pointerId); handleAction(r, c); };
+                    cell.onpointerenter = () => { if (isDragging) handleAction(r, c); };
+                    board.appendChild(cell); cells[r][c] = cell;
+                }
+            }
+            updateHintColors(); startTimer();
         }
-    }
-    updateHintColors();
-    startTimer();
-}
 
         function handleAction(r, c) {
             const cell = cells[r][c];
@@ -263,8 +253,7 @@ function initBoard() {
             }
             const state = cells.map(row => row.map(c => c.classList.contains('black') ? 1 : (c.classList.contains('x-mark') ? -1 : 0)));
             localStorage.setItem(STATE_KEY, JSON.stringify({ id: currentLevelId, board: state }));
-            updateHintColors();
-            checkWinStatus();
+            updateHintColors(); checkWinStatus();
         }
 
         function updateHintColors() {
@@ -283,39 +272,56 @@ function initBoard() {
             }
         }
 
-function checkWinStatus() {
-    // 1. יצירת מטריצה מהמצב הנוכחי
-    const cur = cells.map(r => r.map(c => c.classList.contains('black') ? 1 : 0));
-    
-    // 2. בדיקה אם הפתרון נכון
-    if (checkWin(currentSolution, cur)) {
-        console.log("Win detected!"); // לבדיקה ב-Console
-        stopTimer(); 
-        
-        // 3. הצגת המודאל מיד (לפני שמירה או לוגיקה כבדה)
-        const modal = document.getElementById('game-modal');
-        document.getElementById('modal-title').innerText = "פיצחת את המוח!";
-        document.getElementById('modal-message').innerText = "האתגר הושלם בהצלחה 🎉";
-        modal.style.display = 'flex';
-        modal.style.zIndex = "10000"; // וידוא שהוא מעל הכל
+        function checkWinStatus() {
+            const cur = cells.map(r => r.map(c => c.classList.contains('black') ? 1 : 0));
+            if (checkWin(currentSolution, cur)) {
+                stopTimer();
+                
+                // שמירה ב-StorageManager
+                StorageManager.saveLevelWin(GAME_ID, currentLevelId);
+                localStorage.removeItem(STATE_KEY);
 
-        // 4. שמירת התקדמות (בתוך try-catch כדי שלא ישבור את התצוגה)
-        try {
-            saveWin(currentLevelId);
-        } catch (e) {
-            console.error("Error saving progress:", e);
+                const modal = document.getElementById('game-modal');
+                document.getElementById('modal-title').innerText = "פיצחת את המוח!";
+                document.getElementById('modal-message').innerText = "שלב " + currentLevelId + " הושלם ב-" + formatTime(elapsedTime);
+                
+                const primaryBtn = document.getElementById('modal-primary-btn');
+                primaryBtn.innerText = "המשך לשלב הבא";
+                primaryBtn.onclick = modalPrimaryAction;
+
+                document.getElementById('modal-secondary-btn').style.display = 'none';
+                modal.style.display = 'flex';
+            }
         }
-    }
-}
 
-        function modalPrimaryAction() { document.getElementById('game-modal').style.display = 'none'; exitGame(); }
-        function confirmReset() { if(confirm("לאתחל את השלב?")) { localStorage.removeItem(STATE_KEY); initBoard(); } }
+        function confirmReset() {
+            const modal = document.getElementById('game-modal');
+            const primaryBtn = document.getElementById('modal-primary-btn');
+            const secondaryBtn = document.getElementById('modal-secondary-btn');
+
+            document.getElementById('modal-title').innerText = "איפוס שלב";
+            document.getElementById('modal-message').innerText = "בטוח שרוצים למחוק הכל ולהתחיל מחדש?";
+            
+            primaryBtn.innerText = "כן, אתחל";
+            primaryBtn.onclick = function() {
+                localStorage.removeItem(STATE_KEY);
+                initBoard();
+                closeModal();
+            };
+
+            secondaryBtn.style.display = 'block';
+            modal.style.display = 'flex';
+        }
+
+        function modalPrimaryAction() { closeModal(); exitGame(); }
         function exitGame() { stopTimer(); showScreen('main-menu'); renderMainMenu(); }
+        function triggerDevMode() { devClickCount++; if (devClickCount === 8) { devModeActive = true; alert("Dev Mode Active"); } }
 
         window.onload = () => { setTimeout(() => { showScreen('hub-screen'); }, 2500); };
         window.onpointerup = () => isDragging = false;
         document.getElementById('btn-paint').onclick = () => { currentMode = 'paint'; document.getElementById('btn-paint').classList.add('active'); document.getElementById('btn-x').classList.remove('active'); };
         document.getElementById('btn-x').onclick = () => { currentMode = 'x'; document.getElementById('btn-x').classList.add('active'); document.getElementById('btn-paint').classList.remove('active'); };
+        document.getElementById('reset-btn').onclick = confirmReset;
         setInterval(() => { if(document.getElementById('game-screen').classList.contains('active-screen')) document.getElementById('timer-display').innerText = formatTime(elapsedTime); }, 1000);
     </script>
 </body>
