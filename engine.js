@@ -9,9 +9,12 @@ let timerInterval = null;
 function checkWin(solution, currentBoard) {
     for (let r = 0; r < solution.length; r++) {
         for (let c = 0; c < solution[r].length; c++) {
-            // אם בתא מסוים צריך להיות שחור (1) אבל הוא לא מסומן, המשתמש עוד לא ניצח
-            if (solution[r][c] === 1 && currentBoard[r][c] !== 1) {
-                return false;
+            // הופך כל סימון (איקס או ריק) ל-0, ורק שחור ל-1
+            const userValue = currentBoard[r][c] === 1 ? 1 : 0;
+            const requiredValue = solution[r][c];
+
+            if (userValue !== requiredValue) {
+                return false; // ברגע שיש אי-התאמה (חסר שחור או יש שחור מיותר) - אין ניצחון
             }
         }
     }
