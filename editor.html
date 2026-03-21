@@ -1,33 +1,282 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
-<body>
-    <h2>עורך שלבים פנימי</h2>
-    כמות משבצות: <input type="number" id="size" value="10">
-    <button onclick="createEditor()">צור לוח</button>
-    <div id="grid" style="display:grid; gap:1px; background:#000; margin:20px 0;"></div>
-    <button onclick="exportLevel()">ייצא קוד</button>
-    <p>הקוד שלך (העתק ל-levels.js):</p>
-    <textarea id="output" style="width:100%; height:100px;"></textarea>
+<head>
+    <meta charset="UTF-8">
+    <title>Nonogram Pro - Full Sync Editor</title>
+    <style>
+        :root { --primary: #2563eb; --bg: #f1f5f9; --panel: #ffffff; --success: #16a34a; --danger: #dc2626; --warning: #f59e0b; }
+        body { font-family: system-ui, sans-serif; background: var(--bg); margin: 0; padding: 20px; display: flex; justify-content: center; }
+        .container { background: var(--panel); padding: 25px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 1400px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
+        
+        .setup-bar { display: flex; gap: 15px; align-items: flex-end; background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 20px; }
+        .input-group { display: flex; flex-direction: column; gap: 5px; }
+        .input-group label { font-size: 0.85rem; font-weight: bold; color: #475569; }
+        input, textarea { border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px; font-family: inherit; }
+        
+        #grid-container { display: grid; gap: 0; margin: 0 auto; border: 2px solid #1e293b; background: #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .cell { width: 100%; aspect-ratio: 1/1; border: 0.5px solid #cbd5e1; cursor: pointer; position: relative; box-sizing: border-box; }
+        .cell.black { background: #1e293b; border-color: #000; }
+        
+        /* Solver Indicators */
+        .cell.solved-black::after { content: ''; position: absolute; width: 30%; height: 30%; background: rgba(22, 163, 74, 0.7); border-radius: 50%; top: 35%; left: 35%; }
+        .cell.solved-x::after { content: '×'; position: absolute; width: 100%; height: 100%; top:0; left:0; display: flex; align-items: center; justify-content: center; color: rgba(220, 38, 38, 0.4); font-size: 1.2rem; font-weight: bold; }
 
-    <script>
-        function createEditor() {
-            const size = document.getElementById('size').value;
-            const grid = document.getElementById('grid');
-            grid.style.gridTemplateColumns = `repeat(${size}, 30px)`;
-            grid.innerHTML = '';
-            for(let i=0; i<size*size; i++) {
-                const div = document.createElement('div');
-                div.style.width = '30px'; div.style.height = '30px'; div.style.background = '#fff';
-                div.onclick = () => div.style.background = div.style.background === 'rgb(255, 255, 255)' ? '#000' : '#fff';
-                grid.appendChild(div);
+        .editor-area { display: flex; gap: 25px; align-items: flex-start; }
+        .code-side { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+        textarea { height: 400px; font-family: 'Courier New', monospace; font-size: 12px; background: #1e293b; color: #f8fafc; line-height: 1.5; padding: 15px; }
+        
+        button { padding: 10px 20px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-ghost { background: #64748b; color: white; }
+        button:hover { opacity: 0.9; transform: translateY(-1px); }
+        
+        #status { padding: 15px; border-radius: 8px; font-weight: bold; text-align: center; margin-bottom: 15px; display: none; }
+        .status-ok { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+        .status-warn { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1 style="margin:0; font-size: 1.5rem;">עורך נונוגרם מקצועי 9.0</h1>
+        <div id="status"></div>
+    </div>
+
+    <div class="setup-bar">
+        <div class="input-group">
+            <label>ID</label>
+            <input type="number" id="lvl-id" value="21" style="width: 60px;" oninput="syncToCode()">
+        </div>
+        <div class="input-group">
+            <label>שם השלב</label>
+            <input type="text" id="lvl-name" value="אובייקט חדש" oninput="syncToCode()">
+        </div>
+        <div class="input-group">
+            <label>רוחב (W)</label>
+            <input type="number" id="grid-w" value="15" style="width: 60px;" onchange="initGrid()">
+        </div>
+        <div class="input-group">
+            <label>גובה (H)</label>
+            <input type="number" id="grid-h" value="15" style="width: 60px;" onchange="initGrid()">
+        </div>
+        <button class="btn-success" onclick="runLogicalSolver()">בדוק פתירות לוגית</button>
+        <button class="btn-ghost" onclick="initGrid()">איפוס</button>
+    </div>
+
+    <div class="editor-area">
+        <div style="flex: 1.5;">
+            <div id="grid-container"></div>
+            <p style="color: #64748b; font-size: 0.85rem; margin-top: 15px;">
+                💡 <b>טיפ:</b> ניתן להדביק תמונה (Ctrl+V) כדי להמיר אותה אוטומטית לגריד.
+            </p>
+        </div>
+
+        <div class="code-side">
+            <label style="font-weight: bold;">קוד ייצור (JSON):</label>
+            <textarea id="code-output" spellcheck="false"></textarea>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn-ghost" style="flex:1" onclick="importFromCode()">ייבא קוד לגריד ↑</button>
+                <button class="btn-primary" style="flex:1" onclick="copyCode()">העתק קוד מוכן</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let grid = [];
+    let w = 15, h = 15;
+
+    function initGrid() {
+        w = parseInt(document.getElementById('grid-w').value);
+        h = parseInt(document.getElementById('grid-h').value);
+        grid = Array(h).fill().map(() => Array(w).fill(0));
+        renderGrid();
+    }
+
+    function renderGrid() {
+        const container = document.getElementById('grid-container');
+        container.style.gridTemplateColumns = `repeat(${w}, 1fr)`;
+        container.style.width = (w * 30 > 600) ? '600px' : (w * 30) + 'px';
+        container.innerHTML = '';
+
+        for (let r = 0; r < h; r++) {
+            for (let c = 0; c < w; c++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell' + (grid[r][c] ? ' black' : '');
+                cell.id = `cell-${r}-${c}`;
+                cell.onclick = () => toggleCell(r, c);
+                container.appendChild(cell);
             }
         }
-        function exportLevel() {
-            const cells = document.getElementById('grid').children;
-            let res = "";
-            for(let c of cells) res += (c.style.background === 'rgb(0, 0, 0)' ? '1' : '0');
-            document.getElementById('output').value = res;
+        syncToCode();
+    }
+
+    function toggleCell(r, c) {
+        grid[r][c] = grid[r][c] ? 0 : 1;
+        document.getElementById(`cell-${r}-${c}`).classList.toggle('black');
+        clearSolverMarks();
+        syncToCode();
+    }
+
+    function clearSolverMarks() {
+        document.querySelectorAll('.cell').forEach(c => c.classList.remove('solved-black', 'solved-x'));
+        document.getElementById('status').style.display = 'none';
+    }
+
+    function syncToCode() {
+        const id = document.getElementById('lvl-id').value;
+        const name = document.getElementById('lvl-name').value;
+        let gridLines = grid.map(row => `        [${row.join(',')}]`).join(',\n');
+        
+        const code = `{
+    id: ${id},
+    name: "${name}",
+    width: ${w},
+    height: ${h},
+    grid: [
+${gridLines}
+    ]
+},`;
+        document.getElementById('code-output').value = code;
+    }
+
+    function importFromCode() {
+        try {
+            const raw = document.getElementById('code-output').value.trim();
+            const clean = raw.endsWith(',') ? raw.slice(0, -1) : raw;
+            const obj = eval(`(${clean})`);
+            
+            if (obj.grid) {
+                grid = obj.grid;
+                h = grid.length;
+                w = grid[0].length;
+            } else if (obj.data) {
+                const size = obj.size || Math.sqrt(obj.data.length);
+                w = size; h = size;
+                grid = [];
+                for(let i=0; i<h; i++) grid.push(obj.data.slice(i*w, (i+1)*w).split('').map(Number));
+            }
+            
+            document.getElementById('lvl-id').value = obj.id || 0;
+            document.getElementById('lvl-name').value = obj.name || "";
+            document.getElementById('grid-w').value = w;
+            document.getElementById('grid-h').value = h;
+            renderGrid();
+        } catch(e) { alert("שגיאה בייבוא הקוד. וודא פורמט תקין."); }
+    }
+
+    // --- Logical Solver Engine ---
+    function getClues(line) {
+        const clues = line.join('').split('0').filter(s => s.length > 0).map(s => s.length);
+        return clues.length ? clues : [0];
+    }
+
+    function solveLine(clues, current) {
+        const len = current.length;
+        const possibilities = [];
+        function backtrack(idx, clueIdx, built) {
+            if (clueIdx === clues.length) {
+                const final = [...built, ...Array(len - built.length).fill(0)];
+                if (final.every((v, i) => current[i] === null || current[i] === v)) possibilities.push(final);
+                return;
+            }
+            const clue = clues[clueIdx];
+            const gap = clues.slice(clueIdx + 1).reduce((a, b) => a + b + 1, 0);
+            for (let s = idx; s <= len - gap - clue; s++) {
+                const seg = [...Array(s - idx).fill(0), ...Array(clue).fill(1)];
+                if (seg.length + built.length < len) seg.push(0);
+                const combined = [...built, ...seg];
+                if (combined.every((v, i) => current[i] === null || current[i] === v)) backtrack(combined.length, clueIdx + 1, combined);
+            }
         }
-    </script>
+        if (clues[0] === 0) possibilities.push(Array(len).fill(0));
+        else backtrack(0, 0, []);
+        
+        if (possibilities.length === 0) return null;
+        const result = Array(len).fill(null);
+        for (let i = 0; i < len; i++) {
+            const first = possibilities[0][i];
+            if (possibilities.every(p => p[i] === first)) result[i] = first;
+        }
+        return result;
+    }
+
+    function runLogicalSolver() {
+        clearSolverMarks();
+        const rowClues = grid.map(r => getClues(r));
+        const colClues = Array.from({length: w}, (_, i) => getClues(grid.map(r => r[i])));
+        let solvedGrid = Array(h).fill().map(() => Array(w).fill(null));
+        let changed = true, limit = 0;
+
+        while (changed && limit < 40) {
+            changed = false; limit++;
+            rowClues.forEach((clue, r) => {
+                const res = solveLine(clue, solvedGrid[r]);
+                if (res) res.forEach((v, c) => { if (v !== null && solvedGrid[r][c] === null) { solvedGrid[r][c] = v; changed = true; }});
+            });
+            colClues.forEach((clue, c) => {
+                const col = solvedGrid.map(r => r[c]);
+                const res = solveLine(clue, col);
+                if (res) res.forEach((v, r) => { if (v !== null && solvedGrid[r][c] === null) { solvedGrid[r][c] = v; changed = true; }});
+            });
+        }
+
+        let count = 0;
+        solvedGrid.forEach((row, r) => row.forEach((v, c) => {
+            if (v !== null) count++;
+            if (grid[r][c] === 0) {
+                if (v === 1) document.getElementById(`cell-${r}-${c}`).classList.add('solved-black');
+                if (v === 0) document.getElementById(`cell-${r}-${c}`).classList.add('solved-x');
+            }
+        }));
+
+        const status = document.getElementById('status');
+        status.style.display = 'block';
+        const percent = Math.round((count / (w * h)) * 100);
+        if (percent === 100) {
+            status.className = 'status-ok';
+            status.innerText = "✅ שלב מושלם! ניתן לפתרון לוגי מלא ללא ניחושים.";
+        } else {
+            status.className = 'status-warn';
+            status.innerText = `⚠️ זהירות: השלב דורש ניחוש. רק ${percent}% מהתאים ניתנים לפיצוח לוגי.`;
+        }
+    }
+
+    function copyCode() {
+        const el = document.getElementById('code-output');
+        el.select();
+        document.execCommand('copy');
+        alert("הקוד הועתק!");
+    }
+
+    // Paste Image Support
+    window.addEventListener('paste', e => {
+        const item = Array.from(e.clipboardData.items).find(x => x.type.indexOf('image') !== -1);
+        if (!item) return;
+        const reader = new FileReader();
+        reader.onload = ev => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = w; canvas.height = h;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, w, h);
+                const data = ctx.getImageData(0, 0, w, h).data;
+                for (let i = 0; i < data.length; i += 4) {
+                    const avg = (data[i] + data[i+1] + data[i+2]) / 3;
+                    grid[Math.floor((i/4)/w)][(i/4)%w] = avg < 128 ? 1 : 0;
+                }
+                renderGrid();
+            };
+            img.src = ev.target.result;
+        };
+        reader.readAsDataURL(item.getAsFile());
+    });
+
+    initGrid();
+</script>
 </body>
 </html>

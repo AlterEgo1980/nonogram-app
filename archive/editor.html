@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>Nonogram Pro Editor - Realtime Sync</title>
+    <style>
+        :root { --primary: #2563eb; --bg: #f8fafc; --panel: #ffffff; --success: #16a34a; --danger: #dc2626; --warning: #f59e0b; }
+        body { font-family: system-ui, sans-serif; background: var(--bg); margin: 0; padding: 20px; display: flex; justify-content: center; }
+        .container { background: var(--panel); padding: 25px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); width: 100%; max-width: 1400px; }
+        .tool-section { background: #f1f5f9; padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #e2e8f0; }
+        .row { display: flex; gap: 15px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
+        
+        #grid-outer { max-width: 100%; overflow: auto; padding: 10px; background: #fff; border: 2px solid #1e293b; border-radius: 8px; margin: 20px 0; text-align: center; }
+        #grid-container { display: grid; gap: 0; margin: 0 auto; border: 1px solid #000; max-width: 750px; }
+        
+        .cell { background: white; width: 100%; aspect-ratio: 1 / 1; cursor: pointer; user-select: none; box-sizing: border-box; border: 0.5px solid #ccc; position: relative; }
+        .cell.black { background: #1e293b; border-color: #000; }
+        
+        /* סימוני סולבר */
+        .cell.solved-black::after { content: ''; position: absolute; width: 35%; height: 35%; background: rgba(22, 163, 74, 0.6); border-radius: 50%; top: 32.5%; left: 32.5%; }
+        .cell.solved-x::after { content: '×'; position: absolute; width: 100%; height: 100%; top:0; left:0; display: flex; align-items: center; justify-content: center; color: rgba(220, 38, 38, 0.4); font-size: 18px; }
+
+        textarea { width: 100%; height: 250px; font-family: monospace; direction: ltr; background: #1e293b; color: #e2e8f0; padding: 12px; border-radius: 8px; font-size: 11px; line-height: 1.4; }
+        button { padding: 10px 18px; cursor: pointer; border: none; border-radius: 8px; font-weight: 600; background: var(--primary); color: white; }
+        .status-box { padding: 15px; border-radius: 8px; margin-top: 10px; font-weight: bold; text-align: center; display: none; border: 2px solid transparent; }
+        
+        input { padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1; }
+        .label-group { display: flex; flex-direction: column; font-size: 0.9rem; color: #475569; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Nonogram Pro - סנכרון מלא ופתירות</h2>
+
+    <div class="tool-section">
+        <div class="row">
+            <div class="label-group">ID <input type="number" id="lvl-id" value="1" style="width:50px;" oninput="updateOutput()"></div>
+            <div class="label-group">W <input type="number" id="grid-w" value="15" min="1" style="width:50px;" onchange="resetGrid()"></div>
+            <div class="label-group">H <input type="number" id="grid-h" value="10" min="1" style="width:50px;" onchange="resetGrid()"></div>
+            <div class="label-group">שם <input type="text" id="lvl-name" value="אובייקט חדש" oninput="updateOutput()"></div>
+            <button onclick="runSolver()" style="background: var(--success); margin-top: auto;">בדוק פתירות לוגית</button>
+            <button onclick="resetGrid()" style="background: #64748b; margin-top: auto;">אפס גריד</button>
+        </div>
+        <div id="solver-status" class="status-box"></div>
+    </div>
+
+    <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+        <div style="flex: 2; min-width: 450px;">
+            <div id="grid-outer"><div id="grid-container"></div></div>
+            <p style="font-size: 0.8rem; color: #64748b;">* קליק שמאלי לצביעה. הסולבר יסמן בעיגול ירוק מה שחייב להיות שחור וב-X מה שחייב להיות לבן.</p>
+        </div>
+        <div style="flex: 1; min-width: 350px;">
+            <label><b>קוד (JS Object):</b></label>
+            <textarea id="io-code" oninput="/* זיהוי שינוי ידני בטקסט אם תרצה */"></textarea>
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button onclick="importAnyFormat()" style="flex: 1; background:#64748b">ייבא מהקוד לגריד (IMPORT)</button>
+                <button onclick="copyCode()" style="flex: 1; background: var(--primary);">העתק קוד מוכן</button>
+            </div>
+            <div style="margin-top:15px; padding: 10px; background: #fefce8; border: 1px solid #fef08a; border-radius: 8px; font-size: 0.85rem;">
+                <b>הדבקת תמונה:</b> לחץ Ctrl+V בכל מקום. <br>
+                רגישות: <input type="range" id="threshold" min="0" max="255" value="128" oninput="processImage()" style="vertical-align: middle;">
+            </div>
+        </div>
+    </div>
+</div>
+
+<canvas id="conversionCanvas" style="display:none;"></canvas>
+
+<script>
+    let width = 15, height = 10, gridData = [], currentImage = null;
+
+    // --- ליבת הסנכרון ---
+    function resetGrid() {
+        width = parseInt(document.getElementById('grid-w').value) || 15;
+        height = parseInt(document.getElementById('grid-h').value) || 10;
+        gridData = Array(height).fill().map(() => Array(width).fill(0));
+        renderUI();
+    }
+
+    function renderUI() {
+        const container = document.getElementById('grid-container');
+        container.style.gridTemplateColumns = `repeat(${width}, 1fr)`;
+        container.innerHTML = '';
+        
+        gridData.forEach((row, r) => row.forEach((val, c) => {
+            const cell = document.createElement('div');
+            cell.className = 'cell' + (val === 1 ? ' black' : '');
+            cell.id = `c-${r}-${c}`;
+            cell.onclick = () => {
+                gridData[r][c] = gridData[r][c] ? 0 : 1;
+                cell.classList.toggle('black');
+                clearSolverMarks(); // ברגע שמשנים, מנקים סימני סולבר ישנים
+                updateOutput();
+            };
+            container.appendChild(cell);
+        }));
+        updateOutput();
+    }
+
+    function clearSolverMarks() {
+        document.querySelectorAll('.cell').forEach(el => {
+            el.classList.remove('solved-black', 'solved-x');
+        });
+        document.getElementById('solver-status').style.display = 'none';
+    }
+
+    function updateOutput() {
+        const id = document.getElementById('lvl-id').value;
+        const name = document.getElementById('lvl-name').value;
+        let gridStr = "[\n";
+        gridData.forEach((row, idx) => {
+            gridStr += `        [${row.join(",")}]${idx < height - 1 ? "," : ""}\n`;
+        });
+        gridStr += "    ]";
+        const code = `{ 
+    id: ${id}, 
+    name: "${name}", 
+    width: ${width}, 
+    height: ${height}, 
+    grid: ${gridStr} 
+},`;
+        document.getElementById('io-code').value = code;
+    }
+
+    // --- ייבוא ---
+    function importAnyFormat() {
+        const raw = document.getElementById('io-code').value.trim();
+        if (!raw) return;
+        try {
+            let obj = eval("(" + raw.replace(/,$/, "") + ")");
+            
+            document.getElementById('lvl-id').value = obj.id || 1;
+            document.getElementById('lvl-name').value = obj.name || "מיובא";
+            
+            if (obj.grid) {
+                gridData = JSON.parse(JSON.stringify(obj.grid));
+                height = gridData.length;
+                width = gridData[0].length;
+            } else if (obj.data) {
+                // המרה מסטרינג ישן
+                const s = obj.size || Math.sqrt(obj.data.length);
+                width = s; height = s;
+                gridData = [];
+                for (let i = 0; i < height; i++) {
+                    gridData.push(obj.data.slice(i*width, (i+1)*width).split('').map(Number));
+                }
+            }
+            
+            document.getElementById('grid-w').value = width;
+            document.getElementById('grid-h').value = height;
+            renderUI();
+        } catch(e) { alert("שגיאה בייבוא הקוד. וודא שהפורמט תקין."); }
+    }
+
+    // --- SOLVER (שיטת החפיפה הלוגית) ---
+    function getClues(line) {
+        const clues = line.join('').split('0').filter(s => s.length > 0).map(s => s.length);
+        return clues.length ? clues : [0];
+    }
+
+    function solveLine(clues, currentLine) {
+        const size = currentLine.length;
+        const possibilities = [];
+        function gen(idx, clueIdx, built) {
+            if (clueIdx === clues.length) {
+                const final = [...built, ...Array(size - built.length).fill(0)];
+                if (final.every((v, i) => currentLine[i] === null || currentLine[i] === v)) possibilities.push(final);
+                return;
+            }
+            const clue = clues[clueIdx];
+            const rem = clues.slice(clueIdx + 1).reduce((a, b) => a + b + 1, 0);
+            for (let s = idx; s <= size - rem - clue; s++) {
+                const seg = [...Array(s - idx).fill(0), ...Array(clue).fill(1)];
+                if (seg.length + built.length < size) seg.push(0);
+                const combined = [...built, ...seg];
+                if (combined.every((v, i) => currentLine[i] === null || currentLine[i] === v)) gen(combined.length, clueIdx + 1, combined);
+            }
+        }
+        if (clues[0] === 0) possibilities.push(Array(size).fill(0));
+        else gen(0, 0, []);
+        
+        if (possibilities.length === 0) return null;
+        const res = Array(size).fill(null);
+        for (let i = 0; i < size; i++) {
+            const first = possibilities[0][i];
+            if (possibilities.every(p => p[i] === first)) res[i] = first;
+        }
+        return res;
+    }
+
+    function runSolver() {
+        clearSolverMarks();
+        const status = document.getElementById('solver-status');
+        const rowClues = gridData.map(r => getClues(r));
+        const colClues = Array.from({length: width}, (_, c) => getClues(gridData.map(r => r[c])));
+        
+        let solverGrid = Array(height).fill().map(() => Array(width).fill(null));
+        let changed = true, iters = 0;
+
+        try {
+            while (changed && iters < 50) {
+                changed = false; iters++;
+                for (let r = 0; r < height; r++) {
+                    const res = solveLine(rowClues[r], solverGrid[r]);
+                    res.forEach((v, c) => { if (v !== null && solverGrid[r][c] === null) { solverGrid[r][c] = v; changed = true; } });
+                }
+                for (let c = 0; c < width; c++) {
+                    const res = solveLine(colClues[c], solverGrid.map(r => r[c]));
+                    res.forEach((v, r) => { if (v !== null && solverGrid[r][c] === null) { solverGrid[r][c] = v; changed = true; } });
+                }
+            }
+
+            // סימון ויזואלי
+            solverGrid.forEach((row, r) => row.forEach((v, c) => {
+                const el = document.getElementById(`c-${r}-${c}`);
+                if (gridData[r][c] === 0) {
+                    if (v === 1) el.classList.add('solved-black');
+                    if (v === 0) el.classList.add('solved-x');
+                }
+            }));
+
+            const solved = solverGrid.flat().filter(v => v !== null).length;
+            const total = width * height;
+            status.style.display = 'block';
+            if (solved === total) {
+                status.className = "status-box status-ok";
+                status.innerText = "✅ השלב פתיר לוגית ב-100%!";
+            } else {
+                status.className = "status-box status-warning";
+                status.innerText = `⚠️ מחייב ניחוש: רק ${Math.round(solved/total*100)}% מהמשבצות וודאיות.`;
+            }
+        } catch(e) { alert("שגיאה בחישוב. ייתכן והגריד מורכב מדי."); }
+    }
+
+    // --- טיפול בתמונות ---
+    window.addEventListener('paste', e => {
+        const items = e.clipboardData.items;
+        for (let i = 0; i < items.length; i++) {
+            if (items[i].type.indexOf('image') !== -1) {
+                const reader = new FileReader();
+                reader.onload = ev => { currentImage = new Image(); currentImage.onload = processImage; currentImage.src = ev.target.result; };
+                reader.readAsDataURL(items[i].getAsFile());
+            }
+        }
+    });
+
+    function processImage() {
+        if (!currentImage) return;
+        const thresh = document.getElementById('threshold').value, canvas = document.getElementById('conversionCanvas'), ctx = canvas.getContext('2d');
+        canvas.width = width; canvas.height = height; ctx.drawImage(currentImage, 0, 0, width, height);
+        const imgData = ctx.getImageData(0, 0, width, height).data;
+        for (let i = 0; i < imgData.length; i += 4) {
+            gridData[Math.floor((i/4)/width)][(i/4)%width] = ((imgData[i] + imgData[i+1] + imgData[i+2]) / 3) < thresh ? 1 : 0;
+        }
+        renderUI();
+    }
+
+    function copyCode() { document.getElementById('io-code').select(); document.execCommand('copy'); alert("הקוד הועתק!"); }
+
+    resetGrid();
+</script>
+</body>
+</html>
